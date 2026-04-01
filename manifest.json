@@ -2,11 +2,22 @@
   "name": "Zombie Systems Office",
   "short_name": "ZSO",
   "description": "Alive on paper. Dead in practice. A tactical card combat mini-game about corporate decay.",
-  "start_url": "/",
-  "display": "standalone",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "fullscreen",
   "background_color": "#050508",
   "theme_color": "#050508",
   "orientation": "portrait",
+  "categories": ["games", "entertainment"],
+  "shortcuts": [
+    {
+      "name": "New Game",
+      "short_name": "Play",
+      "description": "Start a new game immediately",
+      "url": "/?action=newgame",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "icon-192.png",
@@ -16,7 +27,8 @@
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

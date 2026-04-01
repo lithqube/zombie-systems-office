@@ -692,6 +692,12 @@ button:active{transform:translateY(0) scale(.98)}
 
 <body>
 
+<!-- ===== UPDATE BANNER ===== -->
+<div id="updateBanner" role="alert" aria-live="polite" style="display:none;position:fixed;top:0;left:0;right:0;z-index:100000;background:#B71C1C;color:#fff;display:none;align-items:center;justify-content:space-between;padding:8px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;">
+  <span>NEW VERSION AVAILABLE</span>
+  <button onclick="activateUpdate()" style="width:auto;padding:4px 14px;margin:0;background:rgba(255,255,255,.18);font-size:10px;letter-spacing:2px;">UPDATE</button>
+</div>
+
 <!-- ===== SPLASH ===== -->
 <div id="splash">
   <div class="splash-inner">
@@ -704,6 +710,7 @@ button:active{transform:translateY(0) scale(.98)}
   <div class="splash-divider"></div>
   <div class="splash-tagline">Alive on paper. Dead in practice.</div>
   <button class="splash-enter" onclick="enterSystem()" aria-label="Enter system">ENTER SYSTEM</button>
+  <button id="installBtn" class="splash-enter" onclick="installApp()" aria-label="Install app" style="display:none;margin-top:8px;border-color:rgba(255,255,255,.2) !important;">INSTALL APP</button>
   <div class="splash-meta">ZSO &bull; TACTICAL RESOURCE ALLOCATION &bull; v2.0</div>
 </div>
 
@@ -770,6 +777,7 @@ button:active{transform:translateY(0) scale(.98)}
   <div class="final-score" id="finalScore"></div>
   <div class="rounds-played" id="roundsPlayed"></div>
   <button onclick="init()" id="restartBtn">REINITIALIZE</button>
+  <button id="shareBtn" onclick="shareScore()" style="display:none;background:rgba(255,255,255,.06);border:1px solid var(--border) !important;color:var(--text-mid);letter-spacing:2px;font-size:11px;">SHARE RESULT</button>
 </div>
 
 </div>
@@ -1090,6 +1098,7 @@ score.textContent=`OPERATOR ${state.pScore}  \u2014  SYSTEM ${state.aScore}`;
 rounds.textContent=`${Math.min(state.round,state.totalRounds)} cycles processed`;
 document.getElementById("status").textContent="System evaluation complete.";
 go.classList.add("show");
+releaseWakeLock();
 }
 
 // ================= RENDER =================
@@ -1191,10 +1200,47 @@ setTimeout(()=>{el.classList.remove("show");el.className="";},2000);
 }
 
 // ================= SPLASH =================
+// ================= WAKE LOCK =================
+let _wakeLock=null;
+async function acquireWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  try{ _wakeLock=await navigator.wakeLock.request('screen'); }catch(e){}
+}
+async function releaseWakeLock(){
+  if(_wakeLock){ await _wakeLock.release(); _wakeLock=null; }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&_wakeLock===null) acquireWakeLock();
+});
+
+// ================= FULLSCREEN =================
+function requestFullscreen(){
+  const el=document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+}
+
+// ================= WEB SHARE =================
+async function shareScore(){
+  if(!navigator.share) return;
+  const title=document.getElementById('gameOverTitle').textContent;
+  const score=document.getElementById('finalScore').textContent;
+  try{
+    await navigator.share({
+      title:'Zombie Systems Office',
+      text:`${title} — ${score} | Alive on paper. Dead in practice.`,
+      url:'https://nimble-daifuku-ac626d.netlify.app/'
+    });
+  }catch(e){}
+}
+if(navigator.share) document.getElementById('shareBtn').style.display='block';
+
 function enterSystem(){
   const s=document.getElementById("splash");
   s.classList.add("hide");
   setTimeout(()=>{s.style.display="none";},650);
+  requestFullscreen();
+  acquireWakeLock();
 }
 
 // ================= CARD DETAIL MODAL =================
@@ -1274,8 +1320,58 @@ function dismissDetail(e){
 }
 
 // ================= PWA =================
+let _swReg=null;
+let _installPrompt=null;
+
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  _installPrompt=e;
+  document.getElementById('installBtn').style.display='block';
+});
+
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('installBtn').style.display='none';
+  _installPrompt=null;
+});
+
+function installApp(){
+  if(!_installPrompt) return;
+  _installPrompt.prompt();
+  _installPrompt.userChoice.then(r=>{
+    if(r.outcome==='accepted') document.getElementById('installBtn').style.display='none';
+    _installPrompt=null;
+  });
+}
+
+// Handle ?action=newgame shortcut
+if(new URLSearchParams(location.search).get('action')==='newgame'){
+  window.addEventListener('load',()=>{ if(typeof enterSystem==='function') enterSystem(); });
+}
+
+function showUpdateBanner(){
+  const b=document.getElementById('updateBanner');
+  b.style.display='flex';
+}
+
+function activateUpdate(){
+  if(_swReg&&_swReg.waiting) _swReg.waiting.postMessage({type:'SKIP_WAITING'});
+}
+
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js',{scope:'/'})
+    .then(reg=>{
+      _swReg=reg;
+      if(reg.waiting) showUpdateBanner();
+      reg.addEventListener('updatefound',()=>{
+        const sw=reg.installing;
+        sw.addEventListener('statechange',()=>{
+          if(sw.state==='installed'&&navigator.serviceWorker.controller) showUpdateBanner();
+        });
+      });
+    })
+    .catch(err=>console.warn('[SW] Registration failed:',err));
+
+  navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload());
 }
 
 // ================= START =================
