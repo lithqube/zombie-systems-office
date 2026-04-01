@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zombie Systems Office</title>
+<meta name="description" content="A tactical card combat mini-game about corporate decay. Alive on paper. Dead in practice.">
+<meta name="theme-color" content="#050508">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23050508'/><text x='50' y='62' font-size='36' text-anchor='middle' fill='%23B71C1C' font-family='serif' font-weight='700'>ZSO</text></svg>">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#050508;
+  --surface:#0a0a10;
+  --border:rgba(255,255,255,.07);
+  --text:#f0e6d3;
+  --text-dim:#666;
+  --text-mid:#999;
+
+  --paralysis:#ff1744;
+  --paralysis-bg:#2a0008;
+  --erosion:#ff6d00;
+  --erosion-bg:#2a1200;
+  --inertia:#00b0ff;
+  --inertia-bg:#001a2a;
+  --shadow:#aa00ff;
+  --shadow-bg:#14002a;
+
+  --ease-out-expo:cubic-bezier(.16,1,.3,1);
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'JetBrains Mono',monospace;
+  touch-action:manipulation;
+  overflow-x:hidden;
+  min-height:100dvh;
+}
+
+/* ===== ATMOSPHERE ===== */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px),
+    radial-gradient(ellipse at 50% 0%,rgba(183,28,28,.06) 0%,transparent 60%);
+  pointer-events:none;
+  z-index:9999;
+}
+
+#game{
+  max-width:480px;
+  margin:auto;
+  padding:12px;
+  position:relative;
+}
+
+/* ===== TITLE BAR ===== */
+.title-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+  position:relative;
+}
+.game-title{text-align:left;position:relative}
+.title-ghost{
+  position:absolute;
+  top:-6px;left:-2px;
+  font-family:'DM Serif Display',serif;
+  font-size:38px;
+  font-weight:700;
+  letter-spacing:6px;
+  opacity:0.04;
+  color:#f0e6d3;
+  pointer-events:none;
+  line-height:1;
+  user-select:none;
+}
+.game-title h1{
+  font-family:'DM Serif Display',serif;
+  font-size:15px;
+  letter-spacing:1.5px;
+  position:relative;
+  line-height:1.15;
+}
+.game-title h1 .zso-accent{
+  background:linear-gradient(135deg,#f0e6d3 0%,#ef5350 50%,#B71C1C 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.game-title h1 .zso-plain{
+  color:var(--text-dim);
+  font-size:13px;
+}
+.game-title .subtitle{
+  font-size:7px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--text-dim);
+  margin-top:2px;
+  opacity:.5;
+}
+
+/* Mute button */
+#muteBtn{
+  width:36px;height:36px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text-mid);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:all .15s;
+  flex-shrink:0;
+  padding:0;
+  margin:0;
+}
+#muteBtn:hover{background:rgba(255,255,255,.05);color:var(--text)}
+#muteBtn svg{width:18px;height:18px}
+#muteBtn::after{display:none}
+
+/* ===== ROUND COUNTER ===== */
+.round-info{
+  text-align:center;
+  font-size:9px;
+  color:var(--text-dim);
+  letter-spacing:2px;
+  margin-bottom:6px;
+}
+
+/* ===== SCOREBOARD ===== */
+.scoreboard{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 16px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-bottom:10px;
+  position:relative;
+  overflow:hidden;
+}
+.scoreboard::after{
+  content:'';
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,23,68,.3),rgba(255,109,0,.3),transparent);
+}
+.score-group{text-align:center;flex:1}
+.score-group .label{
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  color:var(--text-dim);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+}
+.score-group .label svg{width:12px;height:12px;opacity:.5}
+.score-group .value{
+  font-size:22px;
+  font-family:'DM Serif Display',serif;
+  margin-top:2px;
+  transition:transform .3s var(--ease-out-expo);
+}
+.score-group .value.bump{animation:scoreBump .4s var(--ease-out-expo)}
+@keyframes scoreBump{0%{transform:scale(1)}30%{transform:scale(1.3)}100%{transform:scale(1)}}
+.score-group:first-child .value{color:#ff1744}
+.score-group:last-child .value{color:#00e676}
+.score-divider{width:1px;height:32px;background:var(--border)}
+
+/* ===== BATTLEFIELD ===== */
+.battlefield{position:relative;margin:8px 0}
+
+.slot{
+  min-height:80px;
+  border:1px dashed rgba(255,255,255,.1);
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:5px 0;
+  position:relative;
+  overflow:hidden;
+  transition:all .4s var(--ease-out-expo);
+}
+
+.slot-empty{
+  font-size:11px;
+  color:var(--text-dim);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+}
+.slot-empty svg{width:24px;height:24px;opacity:.15;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+
+.slot.filled{border-color:transparent;background:transparent;padding:0}
+
+.slot-card{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  position:relative;
+  overflow:hidden;
+  animation:slotReveal .5s var(--ease-out-expo);
+}
+@keyframes slotReveal{
+  0%{opacity:0;transform:scale(.9) translateY(10px)}
+  100%{opacity:1;transform:scale(1) translateY(0)}
+}
+.slot-card.ai-card{animation-name:slotRevealAi}
+@keyframes slotRevealAi{
+  0%{opacity:0;transform:scale(.9) translateY(-10px)}
+  100%{opacity:1;transform:scale(1) translateY(0)}
+}
+
+.slot-card .suit-icon{
+  width:36px;height:36px;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.slot-card .suit-icon svg{width:20px;height:20px}
+
+.slot-card.PARALYSIS{background:linear-gradient(135deg,var(--paralysis-bg),var(--surface))}
+.slot-card.PARALYSIS .suit-icon{background:rgba(255,23,68,.15)}
+.slot-card.PARALYSIS .suit-icon svg{color:var(--paralysis)}
+.slot-card.EROSION{background:linear-gradient(135deg,var(--erosion-bg),var(--surface))}
+.slot-card.EROSION .suit-icon{background:rgba(255,109,0,.15)}
+.slot-card.EROSION .suit-icon svg{color:var(--erosion)}
+.slot-card.INERTIA{background:linear-gradient(135deg,var(--inertia-bg),var(--surface))}
+.slot-card.INERTIA .suit-icon{background:rgba(0,176,255,.15)}
+.slot-card.INERTIA .suit-icon svg{color:var(--inertia)}
+.slot-card.SHADOW{background:linear-gradient(135deg,var(--shadow-bg),var(--surface))}
+.slot-card.SHADOW .suit-icon{background:rgba(170,0,255,.15)}
+.slot-card.SHADOW .suit-icon svg{color:var(--shadow)}
+
+.slot-card .card-info{flex:1;min-width:0}
+.slot-card .card-info .name{
+  font-family:'DM Serif Display',serif;
+  font-size:14px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.slot-card .card-info .meta{
+  font-size:8px;color:var(--text-mid);margin-top:2px;
+  display:flex;align-items:center;gap:5px;
+}
+.slot-card .card-info .meta svg{width:10px;height:10px;opacity:.6}
+
+.slot-card .power-badge{
+  font-family:'DM Serif Display',serif;
+  font-size:22px;flex-shrink:0;
+  width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:8px;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+}
+
+.vs-divider{
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;margin:3px 0;
+}
+.vs-divider::before,.vs-divider::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(183,28,28,.25),transparent);
+}
+.vs-divider span{font-size:8px;letter-spacing:4px;color:rgba(183,28,28,.5);font-family:'JetBrains Mono',monospace}
+
+/* Redacted separator */
+.redacted-sep{
+  width:100%;height:1px;margin:4px 0;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0px,rgba(255,255,255,.04) 6px,transparent 6px,transparent 10px);
+}
+
+.slot.thinking{
+  border-color:rgba(255,109,0,.3);
+  background:rgba(255,109,0,.02);
+  animation:thinkPulse 1.5s ease-in-out infinite;
+}
+.slot.thinking .slot-empty svg{animation:thinkSpin 2s linear infinite}
+@keyframes thinkPulse{
+  0%,100%{border-color:rgba(255,109,0,.1);box-shadow:none}
+  50%{border-color:rgba(255,109,0,.4);box-shadow:inset 0 0 30px rgba(255,109,0,.03)}
+}
+@keyframes thinkSpin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+/* ===== RESULT ===== */
+#result{
+  text-align:center;
+  font-family:'DM Serif Display',serif;
+  font-size:22px;
+  height:32px;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;
+}
+#result.show{animation:resultPop 2s var(--ease-out-expo)}
+@keyframes resultPop{
+  0%{opacity:0;transform:scale(.5);filter:blur(8px)}
+  15%{opacity:1;transform:scale(1.1);filter:blur(0)}
+  25%{transform:scale(1)}
+  75%{opacity:1}
+  100%{opacity:0}
+}
+#result.capture{color:#00e676;text-shadow:0 0 20px rgba(0,230,118,.3)}
+#result.forfeit{color:#ff6f00;text-shadow:0 0 20px rgba(255,111,0,.3)}
+
+/* ===== STATUS ===== */
+#status{
+  text-align:center;padding:6px;
+  font-size:10px;color:var(--text-dim);
+  letter-spacing:1px;min-height:26px;
+}
+
+/* ===== HAND ===== */
+.hand{
+  display:flex;gap:10px;
+  overflow-x:auto;
+  padding:4px 2px 10px;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+}
+.hand::after{content:'';min-width:1px;flex-shrink:0}
+.hand::-webkit-scrollbar{height:3px}
+.hand::-webkit-scrollbar-track{background:transparent}
+.hand::-webkit-scrollbar-thumb{background:#222;border-radius:2px}
+
+/* ===== CARDS ===== */
+.card{
+  min-width:160px;height:240px;
+  border-radius:14px;
+  padding:9px;
+  display:flex;flex-direction:column;
+  position:relative;
+  cursor:pointer;
+  border:1px solid var(--border);
+  transition:transform .25s var(--ease-out-expo), border-color .2s, box-shadow .3s, opacity .3s;
+  scroll-snap-align:start;
+  outline:none;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;inset:0;border-radius:14px;
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.card:hover::before,.card:focus-visible::before{opacity:1}
+.card:hover,.card:focus-visible{transform:translateY(-6px) scale(1.02)}
+.card:focus-visible{border-color:#ff6f00;box-shadow:0 0 0 2px rgba(255,111,0,.4)}
+.card:active{transform:translateY(-2px) scale(.98);transition-duration:.1s}
+.card.played{opacity:0;transform:translateY(-30px) scale(.8);pointer-events:none}
+
+.card.PARALYSIS{background:linear-gradient(160deg,var(--paralysis-bg),#0a0a10)}
+.card.PARALYSIS::before{background:radial-gradient(circle at 30% 20%,rgba(255,23,68,.08),transparent 70%)}
+.card.EROSION{background:linear-gradient(160deg,var(--erosion-bg),#0a0a10)}
+.card.EROSION::before{background:radial-gradient(circle at 30% 20%,rgba(255,109,0,.08),transparent 70%)}
+.card.INERTIA{background:linear-gradient(160deg,var(--inertia-bg),#0a0a10)}
+.card.INERTIA::before{background:radial-gradient(circle at 30% 20%,rgba(0,176,255,.08),transparent 70%)}
+.card.SHADOW{background:linear-gradient(160deg,var(--shadow-bg),#0a0a10)}
+.card.SHADOW::before{background:radial-gradient(circle at 30% 20%,rgba(170,0,255,.08),transparent 70%)}
+
+.card-header{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:9px;color:var(--text-mid);letter-spacing:1px;
+}
+.card-header .suit-badge{display:flex;align-items:center;gap:3px}
+.card-header .suit-badge svg{width:11px;height:11px}
+.card-header .power-num{font-family:'DM Serif Display',serif;font-size:15px;color:var(--text)}
+
+.card.PARALYSIS .suit-badge{color:var(--paralysis)}
+.card.EROSION .suit-badge{color:var(--erosion)}
+.card.INERTIA .suit-badge{color:var(--inertia)}
+.card.SHADOW .suit-badge{color:var(--shadow)}
+
+.card-letter{
+  position:absolute;top:25px;left:50%;transform:translateX(-50%);
+  font-size:70px;opacity:.03;font-family:'DM Serif Display',serif;pointer-events:none;
+}
+
+.card-title{
+  font-family:'DM Serif Display',serif;
+  text-align:center;font-size:14px;margin-top:42px;line-height:1.2;
+}
+
+.card-ability{
+  font-size:8px;margin-top:6px;padding:5px 7px;
+  border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.4);
+  border-radius:6px;display:flex;align-items:center;gap:5px;
+}
+.card-ability svg{width:12px;height:12px;flex-shrink:0;opacity:.5}
+.card-ability .ability-info{flex:1}
+.card-ability strong{color:var(--text)}
+
+.card-tags{font-size:7px;text-align:center;color:var(--text-dim);margin:4px 0 2px;letter-spacing:1px}
+
+.stat-row{display:flex;align-items:center;gap:3px;margin:1px 0}
+.stat-lbl{font-size:6px;color:var(--text-dim);width:20px;text-align:right;flex-shrink:0}
+.stat-bar{flex:1;height:3px;background:#151518;border-radius:2px;overflow:hidden}
+.stat-bar span{display:block;height:100%;border-radius:2px;transition:width .5s var(--ease-out-expo)}
+
+.card-quote{font-size:7px;text-align:center;color:#555;margin-top:auto;font-style:italic}
+
+/* Momentum indicator */
+.momentum{
+  display:inline-block;font-size:8px;
+  color:#ff6f00;margin-left:4px;
+  animation:glow 1s ease-in-out infinite alternate;
+}
+@keyframes glow{0%{opacity:.5}100%{opacity:1}}
+
+/* ===== BUTTONS ===== */
+button{
+  width:100%;padding:12px;margin:6px 0;
+  background:linear-gradient(135deg,#B71C1C,#d32f2f);
+  border:none;color:white;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;letter-spacing:2px;
+  cursor:pointer;border-radius:8px;
+  transition:all .2s var(--ease-out-expo);
+  outline:none;position:relative;overflow:hidden;
+}
+button::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.1));
+  pointer-events:none;
+}
+button:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(183,28,28,.3)}
+button:focus-visible{box-shadow:0 0 0 2px rgba(255,111,0,.5)}
+button:active{transform:translateY(0) scale(.98)}
+
+/* ===== GAME OVER ===== */
+#gameOver{
+  display:none;text-align:center;
+  padding:28px 20px;margin:12px 0;
+  border:1px solid var(--border);border-radius:14px;
+  background:var(--surface);position:relative;overflow:hidden;
+}
+#gameOver::before{
+  content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+  background:radial-gradient(circle at 50% 50%,rgba(255,109,0,.04),transparent 50%);
+  pointer-events:none;
+}
+#gameOver h2{font-family:'DM Serif Display',serif;font-size:32px;margin:0 0 6px;position:relative}
+#gameOver .final-score{font-size:13px;color:var(--text-mid);margin-bottom:4px;position:relative}
+#gameOver .rounds-played{font-size:10px;color:var(--text-dim);margin-bottom:16px;position:relative}
+#gameOver.show{display:block;animation:gameOverReveal .6s var(--ease-out-expo)}
+@keyframes gameOverReveal{0%{opacity:0;transform:scale(.9)}100%{opacity:1;transform:scale(1)}}
+
+/* ===== PARTICLES ===== */
+.particle{
+  position:fixed;pointer-events:none;z-index:10000;
+  border-radius:50%;
+  animation:particleFly .8s var(--ease-out-expo) forwards;
+}
+@keyframes particleFly{
+  0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0)}
+}
+
+/* ===== SPLASH SCREEN ===== */
+#splash{
+  position:fixed;inset:0;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:99999;
+  padding:32px 24px;
+  text-align:center;
+}
+#splash.hide{animation:splashExit .6s var(--ease-out-expo) forwards}
+@keyframes splashExit{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.04);pointer-events:none}}
+.splash-inner{position:relative;display:inline-block}
+.splash-ghost{
+  position:absolute;
+  top:-28px;left:50%;transform:translateX(-50%);
+  font-family:'DM Serif Display',serif;
+  font-size:120px;
+  letter-spacing:20px;
+  opacity:0.04;
+  color:#f0e6d3;
+  pointer-events:none;
+  white-space:nowrap;
+  user-select:none;
+}
+.splash-title{
+  font-family:'DM Serif Display',serif;
+  font-size:38px;
+  line-height:1.05;
+  letter-spacing:2px;
+  position:relative;
+}
+.splash-title .line1{
+  display:block;
+  background:linear-gradient(135deg,#ef9a9a 0%,#ef5350 40%,#B71C1C 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.splash-title .line2{
+  display:block;color:var(--text);font-size:32px;
+}
+.splash-divider{
+  width:60px;height:1px;margin:20px auto;
+  background:linear-gradient(90deg,transparent,rgba(183,28,28,.5),transparent);
+}
+.splash-tagline{
+  font-size:10px;
+  letter-spacing:3px;
+  color:var(--text-dim);
+  text-transform:uppercase;
+  margin-bottom:36px;
+  opacity:.7;
+}
+.splash-enter{
+  padding:14px 36px;
+  width:auto;
+  background:transparent;
+  border:1px solid rgba(183,28,28,.5) !important;
+  color:var(--text) !important;
+  letter-spacing:4px;
+  font-size:11px;
+  position:relative;
+  overflow:hidden;
+}
+.splash-enter::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(183,28,28,.15),transparent);
+  pointer-events:none;
+}
+.splash-enter:hover{
+  border-color:rgba(183,28,28,.9) !important;
+  box-shadow:0 0 30px rgba(183,28,28,.2) !important;
+  transform:none !important;
+}
+.splash-meta{
+  margin-top:20px;
+  font-size:8px;letter-spacing:2px;color:#333;
+}
+
+/* ===== CARD DETAIL MODAL ===== */
+#cardDetail{
+  position:fixed;inset:0;
+  background:rgba(5,5,8,.92);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  z-index:9998;
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  padding:0 0 0 0;
+}
+#cardDetail.open{
+  display:flex;
+  animation:detailIn .35s var(--ease-out-expo);
+}
+@keyframes detailIn{0%{opacity:0}100%{opacity:1}}
+.detail-sheet{
+  width:100%;max-width:480px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-bottom:none;
+  border-radius:18px 18px 0 0;
+  padding:20px 18px 32px;
+  animation:sheetUp .4s var(--ease-out-expo);
+  position:relative;overflow:hidden;
+  max-height:90dvh;
+  overflow-y:auto;
+}
+@keyframes sheetUp{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+.detail-handle{
+  width:40px;height:3px;background:rgba(255,255,255,.1);
+  border-radius:2px;margin:0 auto 18px;
+}
+.detail-header{
+  display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;
+}
+.detail-suit-icon{
+  width:48px;height:48px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.detail-suit-icon svg{width:24px;height:24px}
+.detail-title-block{flex:1;min-width:0}
+.detail-title-block .d-name{
+  font-family:'DM Serif Display',serif;font-size:22px;line-height:1.1;
+}
+.detail-title-block .d-suit{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-top:3px;
+}
+.detail-power{
+  font-family:'DM Serif Display',serif;font-size:36px;
+  width:52px;height:52px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:10px;background:rgba(255,255,255,.05);
+  border:1px solid var(--border);flex-shrink:0;
+  position:relative;
+}
+.detail-power .d-pwr-label{
+  position:absolute;bottom:3px;font-size:6px;
+  letter-spacing:1px;color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace;
+}
+.detail-redact{
+  height:1px;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0,rgba(255,255,255,.05) 8px,transparent 8px,transparent 14px);
+  margin:12px 0;
+}
+.detail-ability-block{
+  padding:10px 12px;
+  background:rgba(0,0,0,.4);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:8px;
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:12px;
+}
+.detail-ability-block svg{width:16px;height:16px;flex-shrink:0;opacity:.6}
+.detail-ability-block .d-ability-name{
+  font-size:11px;font-weight:600;color:var(--text);letter-spacing:1px;
+  text-transform:uppercase;
+}
+.detail-ability-block .d-ability-text{
+  font-size:9px;color:var(--text-mid);margin-top:2px;letter-spacing:.5px;
+}
+.detail-stats{margin-bottom:14px}
+.detail-stat-row{
+  display:flex;align-items:center;gap:8px;margin:4px 0;
+}
+.detail-stat-row .d-lbl{
+  font-size:8px;letter-spacing:2px;color:var(--text-dim);width:80px;flex-shrink:0;
+}
+.detail-stat-row .d-bar{
+  flex:1;height:4px;background:#151518;border-radius:2px;overflow:hidden;
+}
+.detail-stat-row .d-bar span{display:block;height:100%;border-radius:2px;transition:width .6s var(--ease-out-expo)}
+.detail-stat-row .d-num{
+  font-size:10px;color:var(--text-mid);width:16px;text-align:right;
+}
+.detail-tags{
+  font-size:8px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px;
+  text-transform:uppercase;
+}
+.detail-quote{
+  font-size:10px;color:#444;font-style:italic;margin-bottom:18px;
+  padding:8px 12px;border-left:2px solid rgba(183,28,28,.3);
+}
+.detail-actions{
+  display:flex;gap:10px;
+}
+.detail-actions .btn-deploy{
+  flex:1;padding:13px;margin:0;
+  background:linear-gradient(135deg,#B71C1C,#c62828);
+  letter-spacing:3px;font-size:11px;
+}
+.detail-actions .btn-dismiss{
+  width:80px;padding:13px 10px;margin:0;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border) !important;
+  color:var(--text-dim);
+  letter-spacing:2px;font-size:10px;
+}
+.detail-actions .btn-dismiss:hover{background:rgba(255,255,255,.08);transform:none !important;box-shadow:none !important}
+.detail-momentum-note{
+  font-size:8px;letter-spacing:2px;color:#ff6f00;
+  text-align:center;margin-bottom:8px;
+}
+
+/* ===== REDUCED MOTION ===== */
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:0s !important;transition-duration:0s !important}
+  .slot-empty svg,.particle{animation:none}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== SPLASH ===== -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-ghost">ZSO</div>
+    <div class="splash-title">
+      <span class="line1">ZOMBIE SYSTEMS</span>
+      <span class="line2">OFFICE</span>
+    </div>
+  </div>
+  <div class="splash-divider"></div>
+  <div class="splash-tagline">Alive on paper. Dead in practice.</div>
+  <button class="splash-enter" onclick="enterSystem()" aria-label="Enter system">ENTER SYSTEM</button>
+  <div class="splash-meta">ZSO &bull; TACTICAL RESOURCE ALLOCATION &bull; v2.0</div>
+</div>
+
+<!-- ===== CARD DETAIL MODAL ===== -->
+<div id="cardDetail" role="dialog" aria-modal="true" aria-label="Asset detail" onclick="dismissDetail(event)">
+  <div class="detail-sheet" id="detailSheet"></div>
+</div>
+
+<div id="game">
+
+<div class="title-bar">
+  <div class="game-title">
+    <div class="title-ghost">ZSO</div>
+    <h1><span class="zso-accent">ZOMBIE SYSTEMS</span><br><span class="zso-plain">OFFICE</span></h1>
+    <div class="subtitle">Alive on paper. Dead in practice.</div>
+  </div>
+  <button id="muteBtn" aria-label="Toggle sound" onclick="toggleMute()">
+    <svg id="soundOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+    <svg id="soundOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+  </button>
+</div>
+
+<div class="round-info" id="roundInfo">CYCLE 1 / 6</div>
+
+<div class="scoreboard">
+  <div class="score-group">
+    <div class="label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-4 3-7 7-7s7 3 7 7"/></svg>
+      SYSTEM
+    </div>
+    <div class="value" id="aiScore">0</div>
+  </div>
+  <div class="score-divider"></div>
+  <div class="score-group">
+    <div class="label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+      SUPPLY
+    </div>
+    <div class="value" id="deck">0</div>
+  </div>
+  <div class="score-divider"></div>
+  <div class="score-group">
+    <div class="label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      OPERATOR
+    </div>
+    <div class="value" id="pScore">0</div>
+  </div>
+</div>
+
+<div class="battlefield">
+  <div id="aiSlot" class="slot"></div>
+  <div class="vs-divider"><span>CONFLICT</span></div>
+  <div id="playerSlot" class="slot"></div>
+</div>
+
+<div id="result"></div>
+<div id="status">Awaiting asset deployment.</div>
+
+<div id="playerHand" class="hand" role="listbox" aria-label="Your hand"></div>
+
+<div id="gameOver">
+  <h2 id="gameOverTitle"></h2>
+  <div class="final-score" id="finalScore"></div>
+  <div class="rounds-played" id="roundsPlayed"></div>
+  <button onclick="init()" id="restartBtn">REINITIALIZE</button>
+</div>
+
+</div>
+
+<script>
+
+// ================= SOUND ENGINE =================
+let audioCtx=null;
+let muted=false;
+
+function getAudio(){
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function sfx(type){
+  if(muted) return;
+  try{
+  const ctx=getAudio();
+  const g=ctx.createGain();
+  g.connect(ctx.destination);
+  const now=ctx.currentTime;
+
+  if(type==='play'){
+    const o=ctx.createOscillator();
+    o.type='triangle';o.frequency.setValueAtTime(300,now);
+    o.frequency.exponentialRampToValueAtTime(600,now+.08);
+    g.gain.setValueAtTime(.12,now);g.gain.exponentialRampToValueAtTime(.001,now+.15);
+    o.connect(g);o.start(now);o.stop(now+.15);
+  }
+  else if(type==='capture'){
+    [400,600,800].forEach((f,i)=>{
+      const o=ctx.createOscillator();const g2=ctx.createGain();
+      o.type='sine';o.frequency.value=f;
+      g2.gain.setValueAtTime(.08,now+i*.06);g2.gain.exponentialRampToValueAtTime(.001,now+i*.06+.2);
+      o.connect(g2);g2.connect(ctx.destination);
+      o.start(now+i*.06);o.stop(now+i*.06+.2);
+    });
+  }
+  else if(type==='forfeit'){
+    const o=ctx.createOscillator();
+    o.type='sawtooth';o.frequency.setValueAtTime(400,now);
+    o.frequency.exponentialRampToValueAtTime(150,now+.25);
+    g.gain.setValueAtTime(.08,now);g.gain.exponentialRampToValueAtTime(.001,now+.3);
+    o.connect(g);o.start(now);o.stop(now+.3);
+  }
+  else if(type==='gameOver'){
+    [523,659,784,1047].forEach((f,i)=>{
+      const o=ctx.createOscillator();const g2=ctx.createGain();
+      o.type='sine';o.frequency.value=f;
+      g2.gain.setValueAtTime(.06,now+i*.12);g2.gain.exponentialRampToValueAtTime(.001,now+i*.12+.4);
+      o.connect(g2);g2.connect(ctx.destination);
+      o.start(now+i*.12);o.stop(now+i*.12+.4);
+    });
+  }
+  else if(type==='defeat'){
+    [400,300,200].forEach((f,i)=>{
+      const o=ctx.createOscillator();const g2=ctx.createGain();
+      o.type='sawtooth';o.frequency.value=f;
+      g2.gain.setValueAtTime(.06,now+i*.15);g2.gain.exponentialRampToValueAtTime(.001,now+i*.15+.3);
+      o.connect(g2);g2.connect(ctx.destination);
+      o.start(now+i*.15);o.stop(now+i*.15+.3);
+    });
+  }
+  else if(type==='draw'){
+    const o=ctx.createOscillator();
+    o.type='triangle';o.frequency.setValueAtTime(220,now);
+    o.frequency.linearRampToValueAtTime(330,now+.1);
+    g.gain.setValueAtTime(.06,now);g.gain.exponentialRampToValueAtTime(.001,now+.12);
+    o.connect(g);o.start(now);o.stop(now+.12);
+  }
+  }catch(e){}
+}
+
+function toggleMute(){
+  muted=!muted;
+  document.getElementById('soundOn').style.display=muted?'none':'block';
+  document.getElementById('soundOff').style.display=muted?'block':'none';
+}
+
+// ================= PARTICLES =================
+function spawnParticles(x,y,color,count){
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const size=3+Math.random()*4;
+    p.style.cssText=`left:${x}px;top:${y}px;width:${size}px;height:${size}px;background:${color};--dx:${(Math.random()-.5)*80}px;--dy:${(Math.random()-.5)*80-20}px;`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),800);
+  }
+}
+
+// ================= ICONS =================
+const SUIT_ICONS={
+PARALYSIS:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/><circle cx="12" cy="12" r="3"/><path d="M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>`,
+EROSION:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2c1 3 4 5.5 4 8.5a4 4 0 1 1-8 0C8 7.5 11 5 12 2z"/><path d="M12 14v4m-2-2h4"/></svg>`,
+INERTIA:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+SHADOW:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>`
+};
+
+const ABILITY_ICONS={
+loop:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`,
+break:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>`,
+block:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+overrule:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+boost:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+double:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`,
+steal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>`,
+draw:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>`,
+weaken:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M8 12h8"/></svg>`,
+drain:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v10l4 4"/><circle cx="12" cy="12" r="10"/></svg>`
+};
+
+// ================= DATA (EXPANDED & BALANCED) =================
+const CARDS = [
+// PARALYSIS (red) — control/delay
+{id:1,title:"Process Controller",suit:"PARALYSIS",power:7,toxicity:6,influence:8,awareness:3,ability:"loop",abilityText:"Opponent -2 power",tags:["Deflection","Delay"],quote:"Let\u2019s schedule a follow-up"},
+{id:6,title:"Constraint Escalator",suit:"PARALYSIS",power:6,toxicity:5,influence:6,awareness:4,ability:"block",abilityText:"+1 power required",tags:["Blockers"],quote:"We can\u2019t move forward"},
+{id:20,title:"Compliance Officer",suit:"PARALYSIS",power:5,toxicity:4,influence:7,awareness:6,ability:"weaken",abilityText:"Opponent -1 power",tags:["Regulation"],quote:"Per section 4.2\u2026"},
+{id:21,title:"Meeting Scheduler",suit:"PARALYSIS",power:4,toxicity:3,influence:5,awareness:5,ability:"draw",abilityText:"Draw extra card",tags:["Obstruction"],quote:"Let\u2019s align offline"},
+
+// EROSION (orange) — damage/escalation
+{id:4,title:"Stress Amplifier",suit:"EROSION",power:6,toxicity:7,influence:6,awareness:5,ability:"double",abilityText:"Double toxicity",tags:["Escalation"],quote:"It\u2019s all broken"},
+{id:14,title:"Scope Creeper",suit:"EROSION",power:7,toxicity:6,influence:7,awareness:3,ability:"draw",abilityText:"Draw extra card",tags:["Expansion"],quote:"Just one more thing"},
+{id:22,title:"Burnout Engine",suit:"EROSION",power:5,toxicity:8,influence:4,awareness:2,ability:"drain",abilityText:"AI loses 2 score",tags:["Exhaustion"],quote:"I\u2019m fine, really"},
+{id:23,title:"Deadline Crusher",suit:"EROSION",power:8,toxicity:5,influence:5,awareness:4,ability:"boost",abilityText:"+2 power",tags:["Pressure"],quote:"It was due yesterday"},
+
+// INERTIA (blue) — defense/stability
+{id:9,title:"Local Optimizer",suit:"INERTIA",power:5,toxicity:3,influence:3,awareness:7,ability:"boost",abilityText:"+2 power",tags:["Isolation"],quote:"Works on my machine"},
+{id:24,title:"Legacy Guardian",suit:"INERTIA",power:6,toxicity:4,influence:5,awareness:6,ability:"block",abilityText:"+1 power required",tags:["Resistance"],quote:"Don\u2019t touch that code"},
+{id:25,title:"Silo Builder",suit:"INERTIA",power:4,toxicity:3,influence:4,awareness:8,ability:"weaken",abilityText:"Opponent -1 power",tags:["Isolation"],quote:"That\u2019s not our team\u2019s job"},
+{id:26,title:"Status Quo Defender",suit:"INERTIA",power:7,toxicity:4,influence:6,awareness:5,ability:"loop",abilityText:"Opponent -2 power",tags:["Stagnation"],quote:"If it ain\u2019t broke\u2026"},
+
+// SHADOW (purple) — manipulation/power
+{id:3,title:"Gatekeeper",suit:"SHADOW",power:8,toxicity:6,influence:8,awareness:2,ability:"break",abilityText:"Ignore suit",tags:["Invalidation"],quote:"Technically\u2026"},
+{id:12,title:"Credit Thief",suit:"SHADOW",power:6,toxicity:7,influence:7,awareness:2,ability:"steal",abilityText:"Steal 3 score",tags:["Manipulation"],quote:"As I mentioned earlier"},
+{id:18,title:"Micromanager",suit:"SHADOW",power:8,toxicity:7,influence:9,awareness:1,ability:"overrule",abilityText:"+3 power required",tags:["Control"],quote:"Walk me through it"},
+{id:27,title:"Rumor Mill",suit:"SHADOW",power:5,toxicity:5,influence:6,awareness:3,ability:"drain",abilityText:"AI loses 2 score",tags:["Politics"],quote:"I heard that\u2026"}
+];
+
+const HAND_SIZE=4;
+const TOTAL_ROUNDS=6;
+
+// ================= STATE =================
+let state;
+
+function init(){
+let pool=[...CARDS].sort(()=>Math.random()-0.5);
+
+state={
+p:pool.splice(0,HAND_SIZE),
+a:pool.splice(0,HAND_SIZE),
+deck:pool,
+pScore:0,aScore:0,
+bfP:null,bfA:null,
+lastPSuit:null,lastASuit:null,
+waiting:false,
+ended:false,
+round:1,
+totalRounds:TOTAL_ROUNDS
+};
+
+document.getElementById("gameOver").classList.remove("show");
+document.getElementById("status").textContent="Awaiting asset deployment.";
+render();
+}
+
+// ================= ABILITIES =================
+function applyAbility(ctx){
+const a=ctx.attacker.ability;
+if(a==="loop") ctx.defenderPower-=2;
+if(a==="break") ctx.ignoreSuit=true;
+if(a==="block") ctx.req=(ctx.req||0)+1;
+if(a==="overrule") ctx.req=(ctx.req||0)+3;
+if(a==="boost") ctx.attackerPower+=2;
+if(a==="double") ctx.double=true;
+if(a==="steal") ctx.steal=3;
+if(a==="weaken") ctx.defenderPower-=1;
+if(a==="drain") ctx.drain=2;
+}
+
+// ================= CORE =================
+function eff(c,who){
+const last=who==="p"?state.lastPSuit:state.lastASuit;
+return last===c.suit?c.power+2:c.power;
+}
+
+function hasMomentum(c,who){
+const last=who==="p"?state.lastPSuit:state.lastASuit;
+return last===c.suit;
+}
+
+// ================= AI (SMARTER) =================
+function aiPickDefender(atk){
+const valid=state.a.map(c=>{
+  let ctx={attacker:atk,defender:c,attackerPower:eff(atk,"p"),defenderPower:eff(c,"a"),req:0};
+  applyAbility(ctx);
+  const canDefend=(c.suit===atk.suit||ctx.ignoreSuit)&&ctx.defenderPower>=ctx.attackerPower+(ctx.req||0);
+  if(!canDefend) return null;
+  // Score: prefer lower-value cards to save strong ones
+  const score=10-c.power+c.toxicity+(hasMomentum(c,"a")?3:0);
+  return {card:c,score};
+}).filter(Boolean);
+
+if(!valid.length) return null;
+// Pick best strategic defender
+valid.sort((a,b)=>b.score-a.score);
+return valid[0].card;
+}
+
+// ================= GAME =================
+function play(id){
+if(state.waiting||state.ended) return;
+
+// Animate the played card out
+const cardEl=document.querySelector(`.card[data-id="${id}"]`);
+if(cardEl) cardEl.classList.add('played');
+
+const c=remove(state.p,id);
+state.bfP=c;
+state.lastPSuit=c.suit;
+state.waiting=true;
+
+// Draw extra if ability is "draw"
+if(c.ability==='draw'&&state.deck.length){
+  state.p.push(state.deck.pop());
+  sfx('draw');
+}
+
+document.getElementById("status").textContent="Processing response\u2026";
+document.getElementById("aiSlot").classList.add("thinking");
+
+setTimeout(()=>{render();setTimeout(aiRespond,500);},250);
+}
+
+function aiRespond(){
+document.getElementById("aiSlot").classList.remove("thinking");
+const atk=state.bfP;
+const defender=aiPickDefender(atk);
+
+if(defender){
+  remove(state.a,defender.id);
+  state.bfA=defender;
+  state.lastASuit=defender.suit;
+  // AI draw ability
+  if(defender.ability==='draw'&&state.deck.length){
+    state.a.push(state.deck.pop());
+  }
+  resolve("ai");
+}else{
+  state.pScore+=atk.toxicity;
+  // Drain ability on forfeit
+  if(atk.ability==='drain'){state.aScore=Math.max(0,state.aScore-2);}
+  showResult("FORFEIT");
+
+  const el=document.getElementById("result");
+  spawnParticles(el.getBoundingClientRect().x+100,el.getBoundingClientRect().y,'#ff6f00',6);
+  sfx('forfeit');
+  next();
+}
+render();
+}
+
+function resolve(winner){
+let atk=winner==="player"?state.bfP:state.bfA;
+let def=winner==="player"?state.bfA:state.bfP;
+let ctx={attacker:atk,defender:def,attackerPower:eff(atk,"p"),defenderPower:eff(def,"a"),req:0};
+applyAbility(ctx);
+let tox=atk.toxicity+def.toxicity;
+if(ctx.double) tox*=2;
+if(ctx.steal){state.pScore+=3;state.aScore=Math.max(0,state.aScore-3);}
+if(ctx.drain){state.aScore=Math.max(0,state.aScore-2);}
+if(winner==="player") state.pScore+=tox; else state.aScore+=tox;
+
+showResult("CAPTURE");
+const el=document.getElementById("result");
+spawnParticles(el.getBoundingClientRect().x+100,el.getBoundingClientRect().y,'#00e676',10);
+sfx('capture');
+next();
+}
+
+function next(){
+setTimeout(()=>{
+state.bfP=null;
+state.bfA=null;
+state.waiting=false;
+state.round++;
+
+if(state.deck.length){
+  state.p.push(state.deck.pop());
+  if(state.deck.length) state.a.push(state.deck.pop());
+}
+
+if(state.p.length===0||state.a.length===0||state.round>state.totalRounds){
+  state.ended=true;
+  endGame();
+}else{
+  document.getElementById("status").textContent="Awaiting asset deployment.";
+}
+render();
+},1000);
+}
+
+function endGame(){
+const go=document.getElementById("gameOver");
+const title=document.getElementById("gameOverTitle");
+const score=document.getElementById("finalScore");
+const rounds=document.getElementById("roundsPlayed");
+
+if(state.pScore>state.aScore){
+  title.textContent="Outcome: Favorable.";title.style.color="#00e676";sfx('gameOver');
+}else if(state.aScore>state.pScore){
+  title.textContent="Terminated.";title.style.color="#ef5350";sfx('defeat');
+}else{
+  title.textContent="Inconclusive.";title.style.color="#ff6f00";sfx('defeat');
+}
+score.textContent=`OPERATOR ${state.pScore}  \u2014  SYSTEM ${state.aScore}`;
+rounds.textContent=`${Math.min(state.round,state.totalRounds)} cycles processed`;
+document.getElementById("status").textContent="System evaluation complete.";
+go.classList.add("show");
+}
+
+// ================= RENDER =================
+function renderCard(c){
+const mom=hasMomentum(c,"p");
+return `
+<div class="card ${c.suit}" data-id="${c.id}" tabindex="0" role="option"
+  aria-label="${c.title}, ${c.suit}, power ${eff(c,"p")}, toxicity ${c.toxicity}">
+<div class="card-header">
+  <span class="suit-badge">${SUIT_ICONS[c.suit]} ${c.suit}</span>
+  <span class="power-num">${eff(c,"p")}${mom?'<span class="momentum">+2</span>':''}</span>
+</div>
+<div class="card-letter">${c.suit[0]}</div>
+<div class="card-title">${c.title}</div>
+<div class="card-ability">
+  ${ABILITY_ICONS[c.ability]||''}
+  <span class="ability-info"><strong>${c.ability}</strong> ${c.abilityText}</span>
+</div>
+<div class="card-tags">${c.tags.join(" \u00b7 ")}</div>
+<div class="stat-row"><span class="stat-lbl">TOX</span><div class="stat-bar"><span style="width:${c.toxicity*10}%;background:#ff1744"></span></div></div>
+<div class="stat-row"><span class="stat-lbl">INF</span><div class="stat-bar"><span style="width:${c.influence*10}%;background:#2979ff"></span></div></div>
+<div class="stat-row"><span class="stat-lbl">AWR</span><div class="stat-bar"><span style="width:${c.awareness*10}%;background:#00e676"></span></div></div>
+<div class="card-quote">\u201c${c.quote}\u201d</div>
+</div>`;
+}
+
+function renderSlotCard(c,isAi){
+return `<div class="slot-card ${c.suit} ${isAi?'ai-card':''}">
+  <div class="suit-icon">${SUIT_ICONS[c.suit]}</div>
+  <div class="card-info">
+    <div class="name">${c.title}</div>
+    <div class="meta">
+      ${ABILITY_ICONS[c.ability]||''} ${c.ability} \u2022 TOX ${c.toxicity}
+    </div>
+  </div>
+  <div class="power-badge">${eff(c,isAi?"a":"p")}</div>
+</div>`;
+}
+
+function renderEmptySlot(text,icon){
+return `<div class="slot-empty">${icon}<span>${text}</span></div>`;
+}
+
+const ICON_CARDS=`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="18" rx="3"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="16" y2="21"/></svg>`;
+const ICON_TARGET=`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`;
+
+let prevPScore=0,prevAScore=0;
+
+function render(){
+document.getElementById("deck").textContent=state.deck.length;
+document.getElementById("roundInfo").textContent=`CYCLE ${Math.min(state.round,state.totalRounds)} / ${state.totalRounds}`;
+
+// Animate score changes
+const pEl=document.getElementById("pScore");
+const aEl=document.getElementById("aiScore");
+if(state.pScore!==prevPScore){pEl.textContent=state.pScore;pEl.classList.remove('bump');void pEl.offsetWidth;pEl.classList.add('bump');}
+if(state.aScore!==prevAScore){aEl.textContent=state.aScore;aEl.classList.remove('bump');void aEl.offsetWidth;aEl.classList.add('bump');}
+prevPScore=state.pScore;prevAScore=state.aScore;
+
+document.getElementById("playerHand").innerHTML=state.p.map(renderCard).join("");
+
+document.querySelectorAll(".card").forEach(el=>{
+  const c=state.p.find(x=>x.id===+el.dataset.id);
+  el.onclick=()=>{if(c) showCardDetail(c);};
+  el.onkeydown=(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();if(c) showCardDetail(c);}};
+});
+
+const aiSlot=document.getElementById("aiSlot");
+const playerSlot=document.getElementById("playerSlot");
+
+if(state.bfA){
+  aiSlot.innerHTML=renderSlotCard(state.bfA,true);
+  aiSlot.classList.add("filled");aiSlot.classList.remove("thinking");
+}else{
+  aiSlot.innerHTML=renderEmptySlot("Monitoring\u2026",ICON_TARGET);
+  aiSlot.classList.remove("filled");
+}
+
+if(state.bfP){
+  playerSlot.innerHTML=renderSlotCard(state.bfP,false);
+  playerSlot.classList.add("filled");
+}else{
+  playerSlot.innerHTML=renderEmptySlot("Select asset",ICON_CARDS);
+  playerSlot.classList.remove("filled");
+}
+}
+
+// ================= HELPERS =================
+function remove(arr,id){
+return arr.splice(arr.findIndex(c=>c.id===id),1)[0];
+}
+
+function showResult(t){
+const el=document.getElementById("result");
+el.textContent=t==="CAPTURE"?"\u2296 ASSET CAPTURED":"NO VIABLE RESPONSE";
+el.className=t.toLowerCase();
+el.classList.add("show");
+setTimeout(()=>{el.classList.remove("show");el.className="";},2000);
+}
+
+// ================= SPLASH =================
+function enterSystem(){
+  const s=document.getElementById("splash");
+  s.classList.add("hide");
+  setTimeout(()=>{s.style.display="none";},650);
+}
+
+// ================= CARD DETAIL MODAL =================
+let pendingPlayId=null;
+
+function showCardDetail(c){
+  if(state.waiting||state.ended) return;
+  pendingPlayId=c.id;
+  const mom=hasMomentum(c,"p");
+  const effPow=eff(c,"p");
+  const sheet=document.getElementById("detailSheet");
+  const suitColor={PARALYSIS:"var(--paralysis)",EROSION:"var(--erosion)",INERTIA:"var(--inertia)",SHADOW:"var(--shadow)"}[c.suit];
+  const suitBg={PARALYSIS:"rgba(255,23,68,.15)",EROSION:"rgba(255,109,0,.15)",INERTIA:"rgba(0,176,255,.15)",SHADOW:"rgba(170,0,255,.15)"}[c.suit];
+  sheet.innerHTML=`
+<div class="detail-handle"></div>
+<div class="detail-header">
+  <div class="detail-suit-icon" style="background:${suitBg}">
+    <svg viewBox="0 0 24 24" style="color:${suitColor}">${SUIT_ICONS[c.suit].match(/<svg[^>]*>([\s\S]*?)<\/svg>/)?.[1]||""}</svg>
+  </div>
+  <div class="detail-title-block">
+    <div class="d-name">${c.title}</div>
+    <div class="d-suit" style="color:${suitColor}">${c.suit}</div>
+  </div>
+  <div class="detail-power">
+    ${effPow}${mom?'<span style="font-size:9px;color:#ff6f00;position:absolute;top:3px;right:5px">+2</span>':''}
+    <div class="d-pwr-label">PWR</div>
+  </div>
+</div>
+<div class="detail-redact"></div>
+${mom?`<div class="detail-momentum-note">&#9650; MOMENTUM ACTIVE — +2 POWER</div>`:''}
+<div class="detail-ability-block">
+  ${ABILITY_ICONS[c.ability]||''}
+  <div>
+    <div class="d-ability-name">${c.ability}</div>
+    <div class="d-ability-text">${c.abilityText}</div>
+  </div>
+</div>
+<div class="detail-stats">
+  <div class="detail-stat-row">
+    <div class="d-lbl">TOXICITY</div>
+    <div class="d-bar"><span style="width:${c.toxicity*10}%;background:#ff1744"></span></div>
+    <div class="d-num">${c.toxicity}</div>
+  </div>
+  <div class="detail-stat-row">
+    <div class="d-lbl">INFLUENCE</div>
+    <div class="d-bar"><span style="width:${c.influence*10}%;background:#2979ff"></span></div>
+    <div class="d-num">${c.influence}</div>
+  </div>
+  <div class="detail-stat-row">
+    <div class="d-lbl">AWARENESS</div>
+    <div class="d-bar"><span style="width:${c.awareness*10}%;background:#00e676"></span></div>
+    <div class="d-num">${c.awareness}</div>
+  </div>
+</div>
+<div class="detail-tags">${c.tags.join(" &middot; ")}</div>
+<div class="detail-redact"></div>
+<div class="detail-quote">&ldquo;${c.quote}&rdquo;</div>
+<div class="detail-actions">
+  <button class="btn-deploy" onclick="confirmPlay()" aria-label="Deploy asset">DEPLOY ASSET</button>
+  <button class="btn-dismiss" onclick="dismissDetail(null)" aria-label="Cancel">CANCEL</button>
+</div>`;
+  const modal=document.getElementById("cardDetail");
+  modal.classList.add("open");
+  sfx('play');
+}
+
+function confirmPlay(){
+  const id=pendingPlayId;
+  dismissDetail(null);
+  if(id!==null) play(id);
+}
+
+function dismissDetail(e){
+  if(e&&e.target!==document.getElementById("cardDetail")) return;
+  document.getElementById("cardDetail").classList.remove("open");
+  pendingPlayId=null;
+}
+
+// ================= PWA =================
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+// ================= START =================
+// Show splash first; game initialises behind it
+init();
+
+</script>
+
+</body>
+</html>
