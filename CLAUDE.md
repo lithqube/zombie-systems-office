@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-"Operational Dysfunction" — a single-file card battle mini-game themed around toxic workplace dynamics. The entire game (HTML, CSS, JS) lives in `index.html` with no build step or dependencies.
+"Zombie Systems Office" — a single-file card battle mini-game themed around toxic workplace dynamics. The entire game (HTML, CSS, JS) lives in `index.html` with no build step or dependencies.
 
 ## Running
 
@@ -12,8 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Live:** https://nimble-daifuku-ac626d.netlify.app/
 - **Docker:**
   ```bash
-  docker build -t operational-dysfunction .
-  docker run --rm -p 8080:80 operational-dysfunction
+  docker build -t zombie-systems-office .
+  docker run --rm -p 8080:80 zombie-systems-office
   ```
   Serves via Nginx on port 8080.
 

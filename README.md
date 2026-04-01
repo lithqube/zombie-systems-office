@@ -1,4 +1,4 @@
-# Operational Dysfunction
+# Zombie Systems Office
 
 A polished, shippable mini-game with:
 
@@ -23,13 +23,13 @@ Open `index.html` directly, or run a static server for full PWA behavior.
 **Docker Hub:** Pushes to `main` and version tags (`v*`) publish the image automatically via GitHub Actions.
 
 ```bash
-docker pull <your-dockerhub-username>/operational-dysfunction
-docker run --rm -p 8080:80 <your-dockerhub-username>/operational-dysfunction
+docker pull <your-dockerhub-username>/zombie-systems-office
+docker run --rm -p 8080:80 <your-dockerhub-username>/zombie-systems-office
 ```
 
 **Self-hosted:**
 
 ```bash
-docker build -t operational-dysfunction .
-docker run --rm -p 8080:80 operational-dysfunction
+docker build -t zombie-systems-office .
+docker run --rm -p 8080:80 zombie-systems-office
 ```
