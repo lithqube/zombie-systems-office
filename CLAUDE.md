@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Running
 
 - **Local:** Open `index.html` in a browser. No build tools needed.
+- **Live:** https://nimble-daifuku-ac626d.netlify.app/
 - **Docker:**
   ```bash
   docker build -t operational-dysfunction .
@@ -29,4 +30,6 @@ This is a zero-dependency, single-file game. All markup, styles, and logic are i
 
 ## Deployment
 
-`Dockerfile` uses `nginx:1.27-alpine`. `nginx.conf` sets up SPA fallback routing and aggressive caching for static assets. Service worker caching is configured with no-cache headers for `sw.js`.
+- **Netlify:** `netlify.toml` configures headers (security, caching) and SPA fallback routing. Pushes to `main` deploy automatically.
+- **Docker Hub:** `.github/workflows/docker-publish.yml` builds and pushes the image on `main` pushes and `v*` tags. Requires `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets in the GitHub repo.
+- **Self-hosted:** `Dockerfile` uses `nginx:1.27-alpine`. `nginx.conf` sets up SPA fallback routing and caching headers.
