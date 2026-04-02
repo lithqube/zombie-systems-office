@@ -115,7 +115,7 @@ body::before{
 
 /* Mute button */
 #muteBtn{
-  width:36px;height:36px;
+  width:44px;height:44px;
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:8px;
@@ -164,7 +164,7 @@ body::before{
 }
 .score-group{text-align:center;flex:1}
 .score-group .label{
-  font-size:10px;
+  font-size:11px;
   text-transform:uppercase;
   letter-spacing:2px;
   color:var(--text-dim);
@@ -331,7 +331,7 @@ body::before{
 /* ===== STATUS ===== */
 #status{
   text-align:center;padding:6px;
-  font-size:11px;color:var(--text-mid);
+  font-size:12px;color:var(--text-mid);
   letter-spacing:1px;min-height:26px;
 }
 
@@ -370,6 +370,25 @@ body::before{
 .card:focus-visible{border-color:#ff6f00;box-shadow:0 0 0 2px rgba(255,111,0,.4)}
 .card:active{transform:translateY(-2px) scale(.98);transition-duration:.1s}
 .card.played{opacity:0;transform:translateY(-30px) scale(.8);pointer-events:none}
+
+.card.PARALYSIS:hover,.card.PARALYSIS:focus-visible{border-color:rgba(255,23,68,.35);box-shadow:0 12px 32px rgba(255,23,68,.12),0 4px 12px rgba(0,0,0,.5)}
+.card.EROSION:hover,.card.EROSION:focus-visible{border-color:rgba(255,109,0,.35);box-shadow:0 12px 32px rgba(255,109,0,.12),0 4px 12px rgba(0,0,0,.5)}
+.card.INERTIA:hover,.card.INERTIA:focus-visible{border-color:rgba(0,176,255,.35);box-shadow:0 12px 32px rgba(0,176,255,.12),0 4px 12px rgba(0,0,0,.5)}
+.card.SHADOW:hover,.card.SHADOW:focus-visible{border-color:rgba(170,0,255,.35);box-shadow:0 12px 32px rgba(170,0,255,.12),0 4px 12px rgba(0,0,0,.5)}
+
+/* Disabled hand while AI is thinking */
+#playerHand.hand-disabled .card{
+  opacity:0.38;
+  pointer-events:none;
+  filter:saturate(0.4);
+  transition:opacity .3s,filter .3s;
+}
+#playerHand.hand-disabled .card:hover,
+#playerHand.hand-disabled .card:focus-visible{
+  transform:none;
+  box-shadow:none;
+  border-color:var(--border);
+}
 
 .card.PARALYSIS{background:linear-gradient(160deg,var(--paralysis-bg),#0a0a10)}
 .card.PARALYSIS::before{background:radial-gradient(circle at 30% 20%,rgba(255,23,68,.08),transparent 70%)}
@@ -416,10 +435,18 @@ body::before{
 
 .stat-row{display:flex;align-items:center;gap:3px;margin:1px 0}
 .stat-lbl{font-size:9px;color:var(--text-dim);width:26px;text-align:right;flex-shrink:0}
-.stat-bar{flex:1;height:3px;background:#151518;border-radius:2px;overflow:hidden}
+.stat-bar{flex:1;height:4px;background:#151518;border-radius:2px;overflow:hidden}
 .stat-bar span{display:block;height:100%;border-radius:2px;transition:width .5s var(--ease-out-expo)}
 
-.card-quote{font-size:9px;text-align:center;color:var(--text-dim);margin-top:auto;font-style:italic}
+.card-quote{
+  font-family:'DM Serif Display',serif;
+  font-size:11px;text-align:center;font-style:italic;
+  color:rgba(240,230,211,.8);
+  margin:7px 0 5px;
+  line-height:1.35;
+  padding-top:6px;
+  border-top:1px solid rgba(255,255,255,.07);
+}
 
 /* Momentum indicator */
 .momentum{
@@ -532,7 +559,7 @@ button:active{transform:translateY(0) scale(.98)}
 }
 .splash-enter{
   padding:14px 36px;
-  width:auto;
+  width:100%;max-width:260px;
   background:transparent;
   border:1px solid rgba(183,28,28,.5) !important;
   color:var(--text) !important;
@@ -658,8 +685,26 @@ button:active{transform:translateY(0) scale(.98)}
   text-transform:uppercase;
 }
 .detail-quote{
-  font-size:10px;color:var(--text-dim);font-style:italic;margin-bottom:18px;
-  padding:8px 12px;border-left:2px solid rgba(183,28,28,.5);
+  text-align:center;
+  margin:0 0 16px;
+  padding:16px 12px;
+  position:relative;
+}
+.detail-quote .dq-mark{
+  font-family:'DM Serif Display',serif;
+  font-size:48px;
+  line-height:.8;
+  opacity:.35;
+  display:block;
+  margin-bottom:4px;
+}
+.detail-quote .dq-text{
+  font-family:'DM Serif Display',serif;
+  font-size:18px;
+  font-style:italic;
+  color:var(--text);
+  line-height:1.35;
+  letter-spacing:.2px;
 }
 .detail-actions{
   display:flex;gap:10px;
@@ -670,7 +715,7 @@ button:active{transform:translateY(0) scale(.98)}
   letter-spacing:3px;font-size:11px;
 }
 .detail-actions .btn-dismiss{
-  width:80px;padding:13px 10px;margin:0;
+  width:96px;flex-shrink:0;padding:13px 12px;margin:0;
   background:rgba(255,255,255,.05);
   border:1px solid var(--border) !important;
   color:var(--text-dim);
@@ -680,6 +725,111 @@ button:active{transform:translateY(0) scale(.98)}
 .detail-momentum-note{
   font-size:8px;letter-spacing:2px;color:#ff6f00;
   text-align:center;margin-bottom:8px;
+}
+
+/* ===== SPLASH RULES ===== */
+.splash-rules{
+  margin:0 0 24px;
+  text-align:left;
+  width:100%;max-width:260px;
+}
+.splash-rules-title{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:10px;text-align:center;
+  display:flex;align-items:center;gap:8px;
+}
+.splash-rules-title::before,.splash-rules-title::after{
+  content:'';flex:1;height:1px;
+  background:rgba(255,255,255,.07);
+}
+.splash-rule{
+  display:flex;align-items:baseline;gap:8px;
+  font-size:10px;letter-spacing:.5px;
+  color:rgba(240,230,211,.55);
+  padding:4px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  line-height:1.4;
+}
+.splash-rule:last-child{border-bottom:none}
+.splash-rule .r-key{
+  color:var(--text-mid);letter-spacing:2px;
+  font-size:9px;text-transform:uppercase;
+  flex-shrink:0;width:68px;
+}
+
+/* ===== HELP BUTTON ===== */
+#helpBtn{
+  width:44px;height:44px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text-mid);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:all .15s;
+  flex-shrink:0;padding:0;margin:0;
+  font-family:'DM Serif Display',serif;
+  font-size:16px;letter-spacing:0;
+}
+#helpBtn:hover{background:rgba(255,255,255,.05);color:var(--text)}
+#helpBtn::after{display:none}
+
+/* ===== HELP MODAL ===== */
+#helpModal{
+  position:fixed;inset:0;
+  background:rgba(5,5,8,.92);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  z-index:9998;
+  display:none;
+  align-items:flex-end;justify-content:center;
+}
+#helpModal.open{
+  display:flex;
+  animation:detailIn .35s var(--ease-out-expo);
+}
+.help-sheet{
+  width:100%;max-width:480px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-bottom:none;
+  border-radius:18px 18px 0 0;
+  padding:20px 20px 36px;
+  animation:sheetUp .4s var(--ease-out-expo);
+  max-height:80dvh;overflow-y:auto;
+}
+.help-sheet h3{
+  font-family:'DM Serif Display',serif;
+  font-size:20px;margin-bottom:4px;
+}
+.help-sheet .help-sub{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:18px;
+}
+.help-section{margin-bottom:18px}
+.help-section-title{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:8px;
+  padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.help-row{
+  display:flex;gap:10px;
+  padding:5px 0;
+  font-size:11px;color:rgba(240,230,211,.65);
+  border-bottom:1px solid rgba(255,255,255,.03);
+  line-height:1.4;
+}
+.help-row:last-child{border-bottom:none}
+.help-row .h-key{
+  color:var(--text-mid);
+  letter-spacing:1px;font-size:10px;
+  flex-shrink:0;width:90px;
+  text-transform:uppercase;
+}
+.suit-pill{
+  display:inline-block;font-size:9px;letter-spacing:1px;
+  padding:1px 6px;border-radius:3px;margin:1px 2px;
 }
 
 /* ===== REDUCED MOTION ===== */
@@ -709,9 +859,48 @@ button:active{transform:translateY(0) scale(.98)}
   </div>
   <div class="splash-divider"></div>
   <div class="splash-tagline">Alive on paper. Dead in practice.</div>
+  <div class="splash-rules">
+    <div class="splash-rules-title">HOW TO PLAY</div>
+    <div class="splash-rule"><span class="r-key">TAP CARD</span>Review stats, then Deploy Asset to attack</div>
+    <div class="splash-rule"><span class="r-key">DEFEND</span>AI matches suit &amp; beats your power, or forfeits</div>
+    <div class="splash-rule"><span class="r-key">SCORE</span>Capture = both cards' Toxicity goes to winner</div>
+    <div class="splash-rule"><span class="r-key">FORFEIT</span>Undefended attack = your card's Toxicity to you</div>
+    <div class="splash-rule"><span class="r-key">MOMENTUM</span>Same suit twice = +2 power on next card</div>
+    <div class="splash-rule"><span class="r-key">WIN</span>Highest Toxicity score after 6 cycles</div>
+  </div>
   <button class="splash-enter" onclick="enterSystem()" aria-label="Enter system">ENTER SYSTEM</button>
   <button id="installBtn" class="splash-enter" onclick="installApp()" aria-label="Install app" style="display:none;margin-top:8px;border-color:rgba(255,255,255,.2) !important;">INSTALL APP</button>
   <div class="splash-meta">ZSO &bull; TACTICAL RESOURCE ALLOCATION &bull; v2.0</div>
+</div>
+
+<!-- ===== HELP MODAL ===== -->
+<div id="helpModal" role="dialog" aria-modal="true" aria-label="How to play" onclick="closeHelp(event)">
+  <div class="help-sheet">
+    <div class="detail-handle"></div>
+    <h3>How to Play</h3>
+    <div class="help-sub">Zombie Systems Office &bull; Tactical Resource Allocation</div>
+    <div class="help-section">
+      <div class="help-section-title">Core Loop</div>
+      <div class="help-row"><span class="h-key">Tap card</span>Review stats &amp; ability, then Deploy Asset to attack</div>
+      <div class="help-row"><span class="h-key">AI defends</span>Must play a matching-suit card with equal or greater power</div>
+      <div class="help-row"><span class="h-key">Capture</span>If AI defends, attacker wins — both cards' Toxicity scores to winner</div>
+      <div class="help-row"><span class="h-key">Forfeit</span>If AI can't defend, you score your card's Toxicity only</div>
+    </div>
+    <div class="help-section">
+      <div class="help-section-title">Suits</div>
+      <div class="help-row"><span class="h-key" style="color:var(--paralysis)">PARALYSIS</span>Control &amp; delay — loop, block, weaken</div>
+      <div class="help-row"><span class="h-key" style="color:var(--erosion)">EROSION</span>Damage &amp; escalation — double, drain, boost</div>
+      <div class="help-row"><span class="h-key" style="color:var(--inertia)">INERTIA</span>Defense &amp; stability — block, weaken, boost</div>
+      <div class="help-row"><span class="h-key" style="color:var(--shadow)">SHADOW</span>Manipulation — ignore suit, steal score, overrule</div>
+    </div>
+    <div class="help-section">
+      <div class="help-section-title">Mechanics</div>
+      <div class="help-row"><span class="h-key">Momentum</span>Play same suit twice in a row for +2 power on the next card</div>
+      <div class="help-row"><span class="h-key">Abilities</span>Resolve before combat — can shift power, steal score, or break suit rules</div>
+      <div class="help-row"><span class="h-key">Win</span>Highest Toxicity score after 6 cycles</div>
+    </div>
+    <button onclick="closeHelp(null)" style="margin-top:4px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-dim);letter-spacing:2px;font-size:11px;">CLOSE</button>
+  </div>
 </div>
 
 <!-- ===== CARD DETAIL MODAL ===== -->
@@ -727,10 +916,13 @@ button:active{transform:translateY(0) scale(.98)}
     <h1><span class="zso-accent">ZOMBIE SYSTEMS</span><br><span class="zso-plain">OFFICE</span></h1>
     <div class="subtitle">Alive on paper. Dead in practice.</div>
   </div>
+  <div style="display:flex;gap:6px;flex-shrink:0">
+  <button id="helpBtn" aria-label="How to play" onclick="showHelp()">?</button>
   <button id="muteBtn" aria-label="Toggle sound" onclick="toggleMute()">
     <svg id="soundOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
     <svg id="soundOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
   </button>
+  </div>
 </div>
 
 <div class="round-info" id="roundInfo">CYCLE 1 / 6</div>
@@ -1113,6 +1305,7 @@ return `
 </div>
 <div class="card-letter">${c.suit[0]}</div>
 <div class="card-title">${c.title}</div>
+<div class="card-quote">\u201c${c.quote}\u201d</div>
 <div class="card-ability">
   ${ABILITY_ICONS[c.ability]||''}
   <span class="ability-info"><strong>${c.ability}</strong> ${c.abilityText}</span>
@@ -1121,7 +1314,6 @@ return `
 <div class="stat-row"><span class="stat-lbl">TOX</span><div class="stat-bar"><span style="width:${c.toxicity*10}%;background:#ff1744"></span></div></div>
 <div class="stat-row"><span class="stat-lbl">INF</span><div class="stat-bar"><span style="width:${c.influence*10}%;background:#2979ff"></span></div></div>
 <div class="stat-row"><span class="stat-lbl">AWR</span><div class="stat-bar"><span style="width:${c.awareness*10}%;background:#00e676"></span></div></div>
-<div class="card-quote">\u201c${c.quote}\u201d</div>
 </div>`;
 }
 
@@ -1158,9 +1350,11 @@ if(state.pScore!==prevPScore){pEl.textContent=state.pScore;pEl.classList.remove(
 if(state.aScore!==prevAScore){aEl.textContent=state.aScore;aEl.classList.remove('bump');void aEl.offsetWidth;aEl.classList.add('bump');}
 prevPScore=state.pScore;prevAScore=state.aScore;
 
-document.getElementById("playerHand").innerHTML=state.p.map(renderCard).join("");
+const handEl=document.getElementById("playerHand");
+handEl.innerHTML=state.p.map(renderCard).join("");
+handEl.classList.toggle("hand-disabled",state.waiting||state.ended);
 
-document.querySelectorAll(".card").forEach(el=>{
+handEl.querySelectorAll(".card").forEach(el=>{
   const c=state.p.find(x=>x.id===+el.dataset.id);
   el.onclick=()=>{if(c) showCardDetail(c);};
   el.onkeydown=(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();if(c) showCardDetail(c);}};
@@ -1270,6 +1464,11 @@ function showCardDetail(c){
   </div>
 </div>
 <div class="detail-redact"></div>
+<div class="detail-quote">
+  <span class="dq-mark" style="color:${suitColor}">&ldquo;</span>
+  <div class="dq-text">${c.quote}</div>
+</div>
+<div class="detail-redact"></div>
 ${mom?`<div class="detail-momentum-note">&#9650; MOMENTUM ACTIVE — +2 POWER</div>`:''}
 <div class="detail-ability-block">
   ${ABILITY_ICONS[c.ability]||''}
@@ -1296,8 +1495,6 @@ ${mom?`<div class="detail-momentum-note">&#9650; MOMENTUM ACTIVE — +2 POWER</d
   </div>
 </div>
 <div class="detail-tags">${c.tags.join(" &middot; ")}</div>
-<div class="detail-redact"></div>
-<div class="detail-quote">&ldquo;${c.quote}&rdquo;</div>
 <div class="detail-actions">
   <button class="btn-deploy" onclick="confirmPlay()" aria-label="Deploy asset">DEPLOY ASSET</button>
   <button class="btn-dismiss" onclick="dismissDetail(null)" aria-label="Cancel">CANCEL</button>
@@ -1317,6 +1514,15 @@ function dismissDetail(e){
   if(e&&e.target!==document.getElementById("cardDetail")) return;
   document.getElementById("cardDetail").classList.remove("open");
   pendingPlayId=null;
+}
+
+// ================= HELP MODAL =================
+function showHelp(){
+  document.getElementById("helpModal").classList.add("open");
+}
+function closeHelp(e){
+  if(e&&e.target!==document.getElementById("helpModal")) return;
+  document.getElementById("helpModal").classList.remove("open");
 }
 
 // ================= PWA =================
