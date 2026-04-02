@@ -180,8 +180,7 @@ body::before{
   margin-top:2px;
   transition:transform .3s var(--ease-out-expo);
 }
-.score-group .value.bump{animation:scoreBump .4s var(--ease-out-expo)}
-@keyframes scoreBump{0%{transform:scale(1)}30%{transform:scale(1.3)}100%{transform:scale(1)}}
+.score-group .value.bump{/* handled by GSAP */}
 .score-group:first-child .value{color:#ff1744}
 .score-group:last-child .value{color:#00e676}
 .score-divider{width:1px;height:32px;background:var(--border)}
@@ -225,16 +224,6 @@ body::before{
   border:1px solid var(--border);
   position:relative;
   overflow:hidden;
-  animation:slotReveal .5s var(--ease-out-expo);
-}
-@keyframes slotReveal{
-  0%{opacity:0;transform:scale(.9) translateY(10px)}
-  100%{opacity:1;transform:scale(1) translateY(0)}
-}
-.slot-card.ai-card{animation-name:slotRevealAi}
-@keyframes slotRevealAi{
-  0%{opacity:0;transform:scale(.9) translateY(-10px)}
-  100%{opacity:1;transform:scale(1) translateY(0)}
 }
 
 .slot-card .suit-icon{
@@ -317,14 +306,7 @@ body::before{
   display:flex;align-items:center;justify-content:center;
   opacity:0;
 }
-#result.show{animation:resultPop 2s var(--ease-out-expo)}
-@keyframes resultPop{
-  0%{opacity:0;transform:scale(.5);filter:blur(8px)}
-  15%{opacity:1;transform:scale(1.1);filter:blur(0)}
-  25%{transform:scale(1)}
-  75%{opacity:1}
-  100%{opacity:0}
-}
+#result.show{/* handled by GSAP */}
 #result.capture{color:#00e676;text-shadow:0 0 20px rgba(0,230,118,.3)}
 #result.forfeit{color:#ff6f00;text-shadow:0 0 20px rgba(255,111,0,.3)}
 
@@ -369,7 +351,7 @@ body::before{
 .card:hover,.card:focus-visible{transform:translateY(-6px) scale(1.02)}
 .card:focus-visible{border-color:#ff6f00;box-shadow:0 0 0 2px rgba(255,111,0,.4)}
 .card:active{transform:translateY(-2px) scale(.98);transition-duration:.1s}
-.card.played{opacity:0;transform:translateY(-30px) scale(.8);pointer-events:none}
+.card.played{pointer-events:none}
 
 .card.PARALYSIS:hover,.card.PARALYSIS:focus-visible{border-color:rgba(255,23,68,.35);box-shadow:0 12px 32px rgba(255,23,68,.12),0 4px 12px rgba(0,0,0,.5)}
 .card.EROSION:hover,.card.EROSION:focus-visible{border-color:rgba(255,109,0,.35);box-shadow:0 12px 32px rgba(255,109,0,.12),0 4px 12px rgba(0,0,0,.5)}
@@ -491,8 +473,7 @@ button:active{transform:translateY(0) scale(.98)}
 #gameOver h2{font-family:'DM Serif Display',serif;font-size:32px;margin:0 0 6px;position:relative}
 #gameOver .final-score{font-size:13px;color:var(--text-mid);margin-bottom:4px;position:relative}
 #gameOver .rounds-played{font-size:10px;color:var(--text-dim);margin-bottom:16px;position:relative}
-#gameOver.show{display:block;animation:gameOverReveal .6s var(--ease-out-expo)}
-@keyframes gameOverReveal{0%{opacity:0;transform:scale(.9)}100%{opacity:1;transform:scale(1)}}
+#gameOver.show{display:block;/* entrance handled by GSAP */}
 
 /* ===== PARTICLES ===== */
 .particle{
@@ -514,8 +495,7 @@ button:active{transform:translateY(0) scale(.98)}
   padding:32px 24px;
   text-align:center;
 }
-#splash.hide{animation:splashExit .6s var(--ease-out-expo) forwards}
-@keyframes splashExit{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.04);pointer-events:none}}
+#splash.hide{pointer-events:none}
 .splash-inner{position:relative;display:inline-block}
 .splash-ghost{
   position:absolute;
@@ -597,9 +577,7 @@ button:active{transform:translateY(0) scale(.98)}
 }
 #cardDetail.open{
   display:flex;
-  animation:detailIn .35s var(--ease-out-expo);
 }
-@keyframes detailIn{0%{opacity:0}100%{opacity:1}}
 .detail-sheet{
   width:100%;max-width:480px;
   background:var(--surface);
@@ -607,12 +585,10 @@ button:active{transform:translateY(0) scale(.98)}
   border-bottom:none;
   border-radius:18px 18px 0 0;
   padding:20px 18px 32px;
-  animation:sheetUp .4s var(--ease-out-expo);
   position:relative;overflow:hidden;
   max-height:90dvh;
   overflow-y:auto;
 }
-@keyframes sheetUp{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
 .detail-handle{
   width:40px;height:3px;background:rgba(255,255,255,.1);
   border-radius:2px;margin:0 auto 18px;
@@ -786,7 +762,6 @@ button:active{transform:translateY(0) scale(.98)}
 }
 #helpModal.open{
   display:flex;
-  animation:detailIn .35s var(--ease-out-expo);
 }
 .help-sheet{
   width:100%;max-width:480px;
@@ -795,7 +770,6 @@ button:active{transform:translateY(0) scale(.98)}
   border-bottom:none;
   border-radius:18px 18px 0 0;
   padding:20px 20px 36px;
-  animation:sheetUp .4s var(--ease-out-expo);
   max-height:80dvh;overflow-y:auto;
 }
 .help-sheet h3{
@@ -974,7 +948,21 @@ button:active{transform:translateY(0) scale(.98)}
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
+
+// ================= GSAP SETUP =================
+const prefersReducedMotion=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+let handDirty=false;
+
+function setStatus(text){
+  const el=document.getElementById("status");
+  if(prefersReducedMotion){el.textContent=text;return;}
+  gsap.to(el,{autoAlpha:0,y:-4,duration:.12,ease:'power1.in',onComplete:()=>{
+    el.textContent=text;
+    gsap.fromTo(el,{autoAlpha:0,y:4},{autoAlpha:1,y:0,duration:.18,ease:'power2.out',clearProps:'transform,opacity,visibility'});
+  }});
+}
 
 // ================= SOUND ENGINE =================
 let audioCtx=null;
@@ -1133,7 +1121,8 @@ totalRounds:TOTAL_ROUNDS
 };
 
 document.getElementById("gameOver").classList.remove("show");
-document.getElementById("status").textContent="Awaiting asset deployment.";
+setStatus("Awaiting asset deployment.");
+handDirty=true;
 render();
 }
 
@@ -1186,7 +1175,14 @@ if(state.waiting||state.ended) return;
 
 // Animate the played card out
 const cardEl=document.querySelector(`.card[data-id="${id}"]`);
-if(cardEl) cardEl.classList.add('played');
+if(cardEl){
+  cardEl.classList.add('played');
+  if(!prefersReducedMotion){
+    gsap.to(cardEl,{y:-40,scale:.8,autoAlpha:0,duration:.35,ease:'power2.in'});
+  }else{
+    gsap.set(cardEl,{autoAlpha:0});
+  }
+}
 
 const c=remove(state.p,id);
 state.bfP=c;
@@ -1199,7 +1195,7 @@ if(c.ability==='draw'&&state.deck.length){
   sfx('draw');
 }
 
-document.getElementById("status").textContent="Processing response\u2026";
+setStatus("Processing response\u2026");
 document.getElementById("aiSlot").classList.add("thinking");
 
 setTimeout(()=>{render();setTimeout(aiRespond,500);},250);
@@ -1261,13 +1257,14 @@ state.round++;
 if(state.deck.length){
   state.p.push(state.deck.pop());
   if(state.deck.length) state.a.push(state.deck.pop());
+  handDirty=true;
 }
 
 if(state.p.length===0||state.a.length===0||state.round>state.totalRounds){
   state.ended=true;
   endGame();
 }else{
-  document.getElementById("status").textContent="Awaiting asset deployment.";
+  setStatus("Awaiting asset deployment.");
 }
 render();
 },1000);
@@ -1288,8 +1285,12 @@ if(state.pScore>state.aScore){
 }
 score.textContent=`OPERATOR ${state.pScore}  \u2014  SYSTEM ${state.aScore}`;
 rounds.textContent=`${Math.min(state.round,state.totalRounds)} cycles processed`;
-document.getElementById("status").textContent="System evaluation complete.";
+setStatus("System evaluation complete.");
 go.classList.add("show");
+if(!prefersReducedMotion){
+  gsap.from(go,{autoAlpha:0,scale:.88,y:20,duration:.55,ease:'back.out(1.4)'});
+  gsap.from([title,score,rounds],{autoAlpha:0,y:12,duration:.4,stagger:.1,ease:'power2.out',delay:.2});
+}
 releaseWakeLock();
 }
 
@@ -1346,8 +1347,14 @@ document.getElementById("roundInfo").textContent=`CYCLE ${Math.min(state.round,s
 // Animate score changes
 const pEl=document.getElementById("pScore");
 const aEl=document.getElementById("aiScore");
-if(state.pScore!==prevPScore){pEl.textContent=state.pScore;pEl.classList.remove('bump');void pEl.offsetWidth;pEl.classList.add('bump');}
-if(state.aScore!==prevAScore){aEl.textContent=state.aScore;aEl.classList.remove('bump');void aEl.offsetWidth;aEl.classList.add('bump');}
+if(state.pScore!==prevPScore){
+  pEl.textContent=state.pScore;
+  if(!prefersReducedMotion) gsap.fromTo(pEl,{scale:1.4},{scale:1,duration:.4,ease:'back.out(2)'});
+}
+if(state.aScore!==prevAScore){
+  aEl.textContent=state.aScore;
+  if(!prefersReducedMotion) gsap.fromTo(aEl,{scale:1.4},{scale:1,duration:.4,ease:'back.out(2)'});
+}
 prevPScore=state.pScore;prevAScore=state.aScore;
 
 const handEl=document.getElementById("playerHand");
@@ -1360,12 +1367,24 @@ handEl.querySelectorAll(".card").forEach(el=>{
   el.onkeydown=(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();if(c) showCardDetail(c);}};
 });
 
+// Stagger-deal cards into hand when hand changes
+if(handDirty&&!prefersReducedMotion){
+  const cards=handEl.querySelectorAll(".card");
+  gsap.from(cards,{y:30,autoAlpha:0,duration:.4,stagger:.07,ease:'power2.out',clearProps:'transform,opacity,visibility'});
+  handDirty=false;
+}
+
 const aiSlot=document.getElementById("aiSlot");
 const playerSlot=document.getElementById("playerSlot");
+const prevBfA=aiSlot.querySelector('.slot-card');
+const prevBfP=playerSlot.querySelector('.slot-card');
 
 if(state.bfA){
   aiSlot.innerHTML=renderSlotCard(state.bfA,true);
   aiSlot.classList.add("filled");aiSlot.classList.remove("thinking");
+  if(!prevBfA&&!prefersReducedMotion){
+    gsap.from(aiSlot.querySelector('.slot-card'),{y:-16,autoAlpha:0,scale:.92,duration:.45,ease:'power3.out',clearProps:'transform,opacity,visibility'});
+  }
 }else{
   aiSlot.innerHTML=renderEmptySlot("Monitoring\u2026",ICON_TARGET);
   aiSlot.classList.remove("filled");
@@ -1374,6 +1393,9 @@ if(state.bfA){
 if(state.bfP){
   playerSlot.innerHTML=renderSlotCard(state.bfP,false);
   playerSlot.classList.add("filled");
+  if(!prevBfP&&!prefersReducedMotion){
+    gsap.from(playerSlot.querySelector('.slot-card'),{y:16,autoAlpha:0,scale:.92,duration:.45,ease:'power3.out',clearProps:'transform,opacity,visibility'});
+  }
 }else{
   playerSlot.innerHTML=renderEmptySlot("Select asset",ICON_CARDS);
   playerSlot.classList.remove("filled");
@@ -1390,7 +1412,14 @@ const el=document.getElementById("result");
 el.textContent=t==="CAPTURE"?"\u2296 ASSET CAPTURED":"NO VIABLE RESPONSE";
 el.className=t.toLowerCase();
 el.classList.add("show");
-setTimeout(()=>{el.classList.remove("show");el.className="";},2000);
+if(!prefersReducedMotion){
+  gsap.timeline()
+    .fromTo(el,{autoAlpha:0,scale:.5,filter:'blur(8px)'},{autoAlpha:1,scale:1.08,filter:'blur(0px)',duration:.25,ease:'power3.out'})
+    .to(el,{scale:1,duration:.15,ease:'power2.out'})
+    .to(el,{autoAlpha:0,duration:.4,ease:'power1.in',delay:.9,onComplete:()=>{el.classList.remove("show");el.className="";}});
+}else{
+  setTimeout(()=>{el.classList.remove("show");el.className="";},2000);
+}
 }
 
 // ================= SPLASH =================
@@ -1432,7 +1461,11 @@ if(navigator.share) document.getElementById('shareBtn').style.display='block';
 function enterSystem(){
   const s=document.getElementById("splash");
   s.classList.add("hide");
-  setTimeout(()=>{s.style.display="none";},650);
+  if(!prefersReducedMotion){
+    gsap.to(s,{autoAlpha:0,scale:1.04,duration:.55,ease:'power2.in',onComplete:()=>{s.style.display="none";}});
+  }else{
+    setTimeout(()=>{s.style.display="none";},100);
+  }
   requestFullscreen();
   acquireWakeLock();
 }
@@ -1501,6 +1534,13 @@ ${mom?`<div class="detail-momentum-note">&#9650; MOMENTUM ACTIVE — +2 POWER</d
 </div>`;
   const modal=document.getElementById("cardDetail");
   modal.classList.add("open");
+  if(!prefersReducedMotion){
+    const s=document.getElementById("detailSheet");
+    gsap.fromTo(modal,{autoAlpha:0},{autoAlpha:1,duration:.25,ease:'power2.out'});
+    gsap.fromTo(s,{y:'100%'},{y:0,duration:.4,ease:'power3.out'});
+    gsap.from(s.querySelectorAll('.detail-header,.detail-redact,.detail-quote,.detail-ability-block,.detail-stats,.detail-tags,.detail-actions,.detail-momentum-note'),
+      {autoAlpha:0,y:12,duration:.3,stagger:.05,ease:'power2.out',delay:.2,clearProps:'transform,opacity,visibility'});
+  }
   sfx('play');
 }
 
@@ -1512,17 +1552,48 @@ function confirmPlay(){
 
 function dismissDetail(e){
   if(e&&e.target!==document.getElementById("cardDetail")) return;
-  document.getElementById("cardDetail").classList.remove("open");
-  pendingPlayId=null;
+  const modal=document.getElementById("cardDetail");
+  const s=document.getElementById("detailSheet");
+  if(!prefersReducedMotion){
+    gsap.timeline()
+      .to(s,{y:'100%',duration:.3,ease:'power3.in'})
+      .to(modal,{autoAlpha:0,duration:.2,ease:'power1.in',onComplete:()=>{
+        modal.classList.remove("open");
+        gsap.set(modal,{clearProps:'all'});
+        gsap.set(s,{clearProps:'all'});
+        pendingPlayId=null;
+      }});
+  }else{
+    modal.classList.remove("open");
+    pendingPlayId=null;
+  }
 }
 
 // ================= HELP MODAL =================
 function showHelp(){
-  document.getElementById("helpModal").classList.add("open");
+  const modal=document.getElementById("helpModal");
+  const sheet=modal.querySelector('.help-sheet');
+  modal.classList.add("open");
+  if(!prefersReducedMotion){
+    gsap.fromTo(modal,{autoAlpha:0},{autoAlpha:1,duration:.25,ease:'power2.out'});
+    gsap.fromTo(sheet,{y:'100%'},{y:0,duration:.4,ease:'power3.out'});
+  }
 }
 function closeHelp(e){
   if(e&&e.target!==document.getElementById("helpModal")) return;
-  document.getElementById("helpModal").classList.remove("open");
+  const modal=document.getElementById("helpModal");
+  const sheet=modal.querySelector('.help-sheet');
+  if(!prefersReducedMotion){
+    gsap.timeline()
+      .to(sheet,{y:'100%',duration:.3,ease:'power3.in'})
+      .to(modal,{autoAlpha:0,duration:.2,ease:'power1.in',onComplete:()=>{
+        modal.classList.remove("open");
+        gsap.set(modal,{clearProps:'all'});
+        gsap.set(sheet,{clearProps:'all'});
+      }});
+  }else{
+    modal.classList.remove("open");
+  }
 }
 
 // ================= PWA =================
@@ -1583,6 +1654,15 @@ if('serviceWorker' in navigator){
 // ================= START =================
 // Show splash first; game initialises behind it
 init();
+
+// Splash entrance animation
+if(!prefersReducedMotion){
+  gsap.from('.splash-title',{autoAlpha:0,y:24,duration:.6,ease:'power3.out',delay:.1,clearProps:'transform,opacity,visibility'});
+  gsap.from('.splash-divider',{scaleX:0,duration:.5,ease:'power2.out',delay:.4,transformOrigin:'center',clearProps:'transform'});
+  gsap.from('.splash-tagline',{autoAlpha:0,y:10,duration:.4,ease:'power2.out',delay:.55,clearProps:'transform,opacity,visibility'});
+  gsap.from('.splash-rules',{autoAlpha:0,y:10,duration:.4,ease:'power2.out',delay:.7,clearProps:'transform,opacity,visibility'});
+  gsap.from('.splash-enter',{autoAlpha:0,y:10,stagger:.1,duration:.4,ease:'power2.out',delay:.85,clearProps:'transform,opacity,visibility'});
+}
 
 </script>
 
