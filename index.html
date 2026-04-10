@@ -475,6 +475,43 @@ button:active{transform:translateY(0) scale(.98)}
 #gameOver .rounds-played{font-size:10px;color:var(--text-dim);margin-bottom:16px;position:relative}
 #gameOver.show{display:block;/* entrance handled by GSAP */}
 
+/* ===== REFLECTION TEXT ===== */
+.reflection-text{
+  text-align:center;font-style:italic;font-size:11px;
+  color:var(--text-mid);letter-spacing:.5px;min-height:18px;
+  padding:2px 0;opacity:0;
+}
+
+/* ===== ARCHETYPE RESULT ===== */
+#archetypeResult{
+  margin:0 0 16px;text-align:left;
+  border:1px solid rgba(255,255,255,.08);border-radius:10px;
+  padding:16px;background:rgba(0,0,0,.25);position:relative;
+}
+.archetype-title{
+  font-family:'DM Serif Display',serif;font-size:26px;
+  line-height:1.1;margin:0 0 4px;color:var(--text);
+}
+.archetype-mirror{
+  font-style:italic;font-size:12px;color:rgba(240,230,211,.75);
+  margin:0 0 14px;line-height:1.5;
+  border-left:2px solid rgba(255,255,255,.12);padding-left:10px;
+}
+.archetype-sections{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;
+}
+.archetype-section-label{
+  font-size:8px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:3px;
+}
+.archetype-section-body{
+  font-size:10px;color:rgba(240,230,211,.7);line-height:1.4;
+}
+.secondary-archetype-text{
+  font-size:9px;letter-spacing:1px;color:var(--text-dim);
+  border-top:1px solid var(--border);padding-top:8px;margin-top:2px;
+}
+
 /* ===== PARTICLES ===== */
 .particle{
   position:fixed;pointer-events:none;z-index:10000;
@@ -934,12 +971,14 @@ button:active{transform:translateY(0) scale(.98)}
 </div>
 
 <div id="result"></div>
+<div id="reflection" class="reflection-text"></div>
 <div id="status">Awaiting asset deployment.</div>
 
 <div id="playerHand" class="hand" role="listbox" aria-label="Your hand"></div>
 
 <div id="gameOver">
   <h2 id="gameOverTitle"></h2>
+  <div id="archetypeResult"></div>
   <div class="final-score" id="finalScore"></div>
   <div class="rounds-played" id="roundsPlayed"></div>
   <button onclick="init()" id="restartBtn">REINITIALIZE</button>
@@ -1071,6 +1110,82 @@ weaken:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=
 drain:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v10l4 4"/><circle cx="12" cy="12" r="10"/></svg>`
 };
 
+// ================= ARCHETYPE SYSTEM =================
+const CARD_ARCHETYPES = {
+  1:  { primary:"ghost",       secondary:"politician" },
+  6:  { primary:"politician" },
+  20: { primary:"ghost",       secondary:"politician" },
+  21: { primary:"ghost" },
+  4:  { primary:"vampire" },
+  14: { primary:"firefighter", secondary:"politician" },
+  22: { primary:"vampire",     secondary:"firefighter" },
+  23: { primary:"firefighter" },
+  9:  { primary:"ghost",       secondary:"zombie" },
+  24: { primary:"ghost",       secondary:"zombie" },
+  25: { primary:"zombie",      secondary:"ghost" },
+  26: { primary:"zombie",      secondary:"ghost" },
+  3:  { primary:"politician" },
+  12: { primary:"politician" },
+  18: { primary:"politician" },
+  27: { primary:"politician",  secondary:"vampire" },
+  28: { primary:"clown" },
+  29: { primary:"clown",       secondary:"vampire" }
+};
+
+const ARCHETYPE_PROFILES = {
+  firefighter:{
+    title:"The Firefighter \uD83D\uDD25",
+    mirror:"You move fast and fix what others broke. The cost is never asking who started the fire.",
+    perception:"Reliable under pressure",
+    cost:"Reactive exhaustion",
+    growth:"Prevent before you respond"
+  },
+  politician:{
+    title:"The Politician \uD83D\uDC0D",
+    mirror:"You understand the room better than anyone. Every word lands \u2014 but candor is a card you rarely play.",
+    perception:"Strategic and smooth",
+    cost:"Trust erosion over time",
+    growth:"One honest move per cycle"
+  },
+  ghost:{
+    title:"The Ghost \uD83D\uDC7B",
+    mirror:"You move without friction. Some call it elegant; others have stopped expecting you to show up.",
+    perception:"Frictionless, adaptive",
+    cost:"Invisible when it matters",
+    growth:"Presence is also a strategy"
+  },
+  vampire:{
+    title:"The Vampire \uD83E\uDDDB",
+    mirror:"Your output relies on others\u2019 energy. You thrive in proximity \u2014 but rooms empty when you leave.",
+    perception:"High-impact collaborator",
+    cost:"Dependency and drain",
+    growth:"Regenerate something yourself"
+  },
+  zombie:{
+    title:"The Zombie \uD83E\uDDDF",
+    mirror:"You are consistent, durable, and unmovable. Change finds you last \u2014 if at all.",
+    perception:"Stable and persistent",
+    cost:"Calcification of thought",
+    growth:"One deliberate deviation"
+  },
+  clown:{
+    title:"The Clown \uD83E\uDD21",
+    mirror:"Humor softens every edge you encounter. It also keeps anyone from knowing where the edges are.",
+    perception:"Disarming, approachable",
+    cost:"Deflection masquerading as charm",
+    growth:"Let something land without the joke"
+  }
+};
+
+const MICRO_REFLECTIONS = {
+  firefighter:["Another fire handled.","Fast response. Someone noticed.","The fix arrived before the problem was named."],
+  politician:["Framed carefully.","The room heard what you intended.","Well-played \u2014 in every sense."],
+  ghost:["Here and then not.","Smooth. Almost too smooth.","You move like someone used to not being seen."],
+  vampire:["Drawing from something close.","High output. Someone absorbed the cost.","Effective. Check the room temperature later."],
+  zombie:["Consistent as ever.","Unmoved. Unmoved is a choice.","The system holds. For now."],
+  clown:["Landed with a laugh.","Made it lighter than it needed to be.","Funny. Also: what are you avoiding?"]
+};
+
 // ================= DATA (EXPANDED & BALANCED) =================
 const CARDS = [
 // PARALYSIS (red) — control/delay
@@ -1095,7 +1210,10 @@ const CARDS = [
 {id:3,title:"Gatekeeper",suit:"SHADOW",power:8,toxicity:6,influence:8,awareness:2,ability:"break",abilityText:"Ignore suit",tags:["Invalidation"],quote:"Technically\u2026"},
 {id:12,title:"Credit Thief",suit:"SHADOW",power:6,toxicity:7,influence:7,awareness:2,ability:"steal",abilityText:"Steal 3 score",tags:["Manipulation"],quote:"As I mentioned earlier"},
 {id:18,title:"Micromanager",suit:"SHADOW",power:8,toxicity:7,influence:9,awareness:1,ability:"overrule",abilityText:"+3 power required",tags:["Control"],quote:"Walk me through it"},
-{id:27,title:"Rumor Mill",suit:"SHADOW",power:5,toxicity:5,influence:6,awareness:3,ability:"drain",abilityText:"AI loses 2 score",tags:["Politics"],quote:"I heard that\u2026"}
+{id:27,title:"Rumor Mill",suit:"SHADOW",power:5,toxicity:5,influence:6,awareness:3,ability:"drain",abilityText:"AI loses 2 score",tags:["Politics"],quote:"I heard that\u2026"},
+// CLOWN (deflection/humor)
+{id:28,title:"The Stress Comedian",suit:"EROSION",power:4,toxicity:5,influence:7,awareness:6,ability:"weaken",abilityText:"Opponent -1 power",tags:["Deflection","Humor"],quote:"Have you tried laughing about it?"},
+{id:29,title:"The Charm Drain",suit:"SHADOW",power:5,toxicity:6,influence:8,awareness:4,ability:"steal",abilityText:"Steal 3 score",tags:["Manipulation","Humor"],quote:"Just a joke \u2014 why so serious?"}
 ];
 
 const HAND_SIZE=4;
@@ -1117,10 +1235,13 @@ lastPSuit:null,lastASuit:null,
 waiting:false,
 ended:false,
 round:1,
-totalRounds:TOTAL_ROUNDS
+totalRounds:TOTAL_ROUNDS,
+archetypes:  {vampire:0,zombie:0,politician:0,clown:0,firefighter:0,ghost:0},
+aiArchetypes:{vampire:0,zombie:0,politician:0,clown:0,firefighter:0,ghost:0}
 };
 
 document.getElementById("gameOver").classList.remove("show");
+document.getElementById("archetypeResult").innerHTML="";
 setStatus("Awaiting asset deployment.");
 handDirty=true;
 render();
@@ -1195,6 +1316,24 @@ if(c.ability==='draw'&&state.deck.length){
   sfx('draw');
 }
 
+// Score archetype + show micro-reflection
+scoreArchetype(c.id,"p");
+const _archMap=CARD_ARCHETYPES[c.id];
+if(_archMap){
+  const _refEl=document.getElementById("reflection");
+  const _opts=MICRO_REFLECTIONS[_archMap.primary];
+  _refEl.textContent=_opts[Math.floor(Math.random()*_opts.length)];
+  if(!prefersReducedMotion){
+    gsap.timeline()
+      .to(_refEl,{opacity:1,duration:.2,ease:'power2.out'})
+      .to(_refEl,{opacity:0,duration:.3,ease:'power1.in',delay:1.2,
+          onComplete:()=>{_refEl.textContent="";}});
+  }else{
+    _refEl.style.opacity="1";
+    setTimeout(()=>{_refEl.style.opacity="0";_refEl.textContent="";},1500);
+  }
+}
+
 setStatus("Processing response\u2026");
 document.getElementById("aiSlot").classList.add("thinking");
 
@@ -1208,6 +1347,7 @@ const defender=aiPickDefender(atk);
 
 if(defender){
   remove(state.a,defender.id);
+  scoreArchetype(defender.id,"a");
   state.bfA=defender;
   state.lastASuit=defender.suit;
   // AI draw ability
@@ -1275,6 +1415,7 @@ const go=document.getElementById("gameOver");
 const title=document.getElementById("gameOverTitle");
 const score=document.getElementById("finalScore");
 const rounds=document.getElementById("roundsPlayed");
+const archetypeDiv=document.getElementById("archetypeResult");
 
 if(state.pScore>state.aScore){
   title.textContent="Outcome: Favorable.";title.style.color="#00e676";sfx('gameOver');
@@ -1283,13 +1424,31 @@ if(state.pScore>state.aScore){
 }else{
   title.textContent="Inconclusive.";title.style.color="#ff6f00";sfx('defeat');
 }
+
+const entries=Object.entries(state.archetypes).sort((a,b)=>b[1]-a[1]);
+const primaryKey=entries[0][1]>0?entries[0][0]:"ghost";
+const secondaryKey=entries[1]&&entries[1][1]>0&&entries[1][0]!==primaryKey?entries[1][0]:null;
+const profile=ARCHETYPE_PROFILES[primaryKey];
+const secondaryProfile=secondaryKey?ARCHETYPE_PROFILES[secondaryKey]:null;
+
+archetypeDiv.innerHTML=`
+  <div class="archetype-title">${profile.title}</div>
+  <div class="archetype-mirror">${profile.mirror}</div>
+  <div class="archetype-sections">
+    <div><div class="archetype-section-label">Perception</div><div class="archetype-section-body">${profile.perception}</div></div>
+    <div><div class="archetype-section-label">Cost</div><div class="archetype-section-body">${profile.cost}</div></div>
+    <div><div class="archetype-section-label">Growth</div><div class="archetype-section-body">${profile.growth}</div></div>
+  </div>
+  ${secondaryProfile?`<div class="secondary-archetype-text">Secondary pattern: ${secondaryProfile.title}</div>`:""}
+`;
+
 score.textContent=`OPERATOR ${state.pScore}  \u2014  SYSTEM ${state.aScore}`;
 rounds.textContent=`${Math.min(state.round,state.totalRounds)} cycles processed`;
-setStatus("System evaluation complete.");
+setStatus("Behavioral profile compiled.");
 go.classList.add("show");
 if(!prefersReducedMotion){
   gsap.from(go,{autoAlpha:0,scale:.88,y:20,duration:.55,ease:'back.out(1.4)'});
-  gsap.from([title,score,rounds],{autoAlpha:0,y:12,duration:.4,stagger:.1,ease:'power2.out',delay:.2});
+  gsap.from([title,archetypeDiv,score,rounds],{autoAlpha:0,y:12,duration:.4,stagger:.12,ease:'power2.out',delay:.2});
 }
 releaseWakeLock();
 }
@@ -1405,6 +1564,14 @@ if(state.bfP){
 // ================= HELPERS =================
 function remove(arr,id){
 return arr.splice(arr.findIndex(c=>c.id===id),1)[0];
+}
+
+function scoreArchetype(cardId,who){
+  const mapping=CARD_ARCHETYPES[cardId];
+  if(!mapping) return;
+  const target=who==="p"?state.archetypes:state.aiArchetypes;
+  target[mapping.primary]=(target[mapping.primary]||0)+2;
+  if(mapping.secondary) target[mapping.secondary]=(target[mapping.secondary]||0)+1;
 }
 
 function showResult(t){
